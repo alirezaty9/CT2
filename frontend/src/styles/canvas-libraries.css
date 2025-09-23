@@ -1,0 +1,245 @@
+/* استایل‌های مورد نیاز برای کتابخانه‌های Canvas */
+
+/* 
+نکته: CSS فایل‌های کتابخانه‌ها را بعد از نصب uncomment کنید:
+@import 'cropperjs/dist/cropper.css';
+@import 'croppie/croppie.css';
+*/
+
+/* استایل‌های سفارشی برای Canvas */
+.canvas-container {
+  position: relative;
+  display: inline-block;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.canvas-container canvas {
+  display: block;
+  border-radius: 8px;
+}
+
+/* Fabric.js selection styles */
+.canvas-container .upper-canvas {
+  border-radius: 8px;
+}
+
+/* Custom cropper overlay */
+.cropper-container {
+  direction: ltr;
+}
+
+.cropper-modal {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.cropper-view-box {
+  outline: 2px solid #3b82f6;
+  outline-offset: -2px;
+}
+
+.cropper-face {
+  background-color: inherit;
+}
+
+.cropper-line {
+  background-color: #3b82f6;
+}
+
+.cropper-point {
+  background-color: #3b82f6;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.cropper-point.point-se {
+  cursor: se-resize;
+}
+
+.cropper-point.point-sw {
+  cursor: sw-resize;
+}
+
+.cropper-point.point-ne {
+  cursor: ne-resize;
+}
+
+.cropper-point.point-nw {
+  cursor: nw-resize;
+}
+
+.cropper-point.point-n {
+  cursor: n-resize;
+}
+
+.cropper-point.point-s {
+  cursor: s-resize;
+}
+
+.cropper-point.point-e {
+  cursor: e-resize;
+}
+
+.cropper-point.point-w {
+  cursor: w-resize;
+}
+
+/* Croppie custom styles */
+.croppie-container {
+  background: #f9fafb;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.croppie-container .cr-boundary {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.croppie-container .cr-viewport {
+  border: 2px solid #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.croppie-container .cr-slider-wrap {
+  margin-top: 15px;
+}
+
+.croppie-container .cr-slider {
+  background: #e5e7eb;
+  border-radius: 9999px;
+  height: 6px;
+}
+
+.croppie-container .cr-slider::-webkit-slider-thumb {
+  background: #3b82f6;
+  border: none;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.croppie-container .cr-slider::-moz-range-thumb {
+  background: #3b82f6;
+  border: none;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+/* Fabric.js object controls */
+.canvas-container .fabric-object-controls {
+  opacity: 0.8;
+}
+
+.canvas-container .fabric-object-controls .control {
+  background: #3b82f6;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Loading states */
+.canvas-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.canvas-loading .spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e5e7eb;
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .canvas-container {
+    width: 100%;
+    overflow-x: auto;
+  }
+  
+  .cropper-container {
+    max-width: 100%;
+  }
+  
+  .croppie-container {
+    padding: 10px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .canvas-container {
+    background: #1f2937;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  }
+  
+  .cropper-modal {
+    background-color: rgba(0, 0, 0, 0.7);
+  }
+  
+  .croppie-container {
+    background: #374151;
+    border-color: #6b7280;
+  }
+  
+  .croppie-container .cr-boundary {
+    background: #1f2937;
+  }
+}
+
+/* Animation improvements */
+.canvas-container,
+.cropper-container,
+.croppie-container {
+  transition: all 0.3s ease;
+}
+
+.canvas-container:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Accessibility improvements */
+.canvas-container:focus-within {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.cropper-point:focus,
+.croppie-container .cr-slider:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+  .canvas-container {
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+  
+  .cropper-container,
+  .croppie-container {
+    display: none;
+  }
+}

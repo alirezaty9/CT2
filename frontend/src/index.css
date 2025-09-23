@@ -1,0 +1,148 @@
+@import url('https://fonts.googleapis.com/css2?family=Vazir:wght@400;500;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* انیمیشن نرم برای تغییر تم */
+
+/* global.css */
+
+body {
+  font-family: 'Inter', sans-serif; /* فونت پیش‌فرض برای انگلیسی */
+  overflow-y: scroll;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.font-vazir {
+  font-family: 'Vazir', sans-serif; /* فونت برای فارسی */
+}
+
+/* بقیه استایل‌ها بدون تغییر */
+
+/* Eraser Tool Slider Styles */
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-track {
+  background: #e5e7eb;
+  height: 8px;
+  border-radius: 4px;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background: #ef4444;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.slider::-webkit-slider-thumb:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+  transition: all 0.2s ease;
+}
+
+.slider::-moz-range-track {
+  background: #e5e7eb;
+  height: 8px;
+  border-radius: 4px;
+  border: none;
+}
+
+.slider::-moz-range-thumb {
+  background: #ef4444;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.slider::-moz-range-thumb:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+  transition: all 0.2s ease;
+}
+/* 🎨 متغیرهای تم روشن (بدون تغییر) */
+:root {
+  --color-primary: #3b82f6;           /* blue-500 */
+  --color-primary-dark: #2563eb;       /* blue-600 */
+  --color-highlight: #ef4444;         /* red-500 */
+  --color-highlight-dark: #b91c1c;     /* red-700 */
+  --color-background: #f9fafb;        /* gray-50 */
+  --color-background-white: #ffffff;
+  --color-background-secondary: #f3f4f6; /* gray-100 */
+  --color-text: #111827;               /* gray-900 */
+  --color-text-muted: #6b7280;         /* gray-500 */
+  --color-border: #e5e7eb;             /* gray-200 */
+  --color-accent: #e0e7ff;             /* indigo-100 */
+  --color-accent-dark: #6366f1;        /* indigo-500 */
+}
+
+/* 🌙 متغیرهای تم دارک (پیشنهاد جدید) */
+.dark {
+  --color-primary: #6366f1;            /* indigo-500 - رنگ اصلی کمی شاداب‌تر */
+  --color-primary-dark: #4f46e5;        /* indigo-600 - برای هاور */
+  --color-highlight: #ef4444;          /* red-500 - همان قرمز روشن */
+  --color-highlight-dark: #dc2626;      /* red-600 - قرمز کمی تیره‌تر */
+
+  --color-background: #111827;         /* gray-900 - پس‌زمینه اصلی تاریک و عمیق */
+  --color-background-white: #1f2937;    /* gray-800 - برای کارت‌ها و پنل‌های برجسته‌تر */
+  --color-background-secondary: #374151; /* gray-700 - برای سایدبارها و عناصر ثانویه */
+
+  --color-text: #e5e7eb;                /* gray-200 - متن اصلی روشن‌تر */
+  --color-text-muted: #9ca3af;          /* gray-400 - متن کم‌رنگ‌تر */
+  --color-border: #374151;              /* gray-700 - مرزها، کمی تیره‌تر از background-secondary */
+
+  --color-accent: #374151;              /* gray-700 - برای پنل‌ها، با پس‌زمینه خودشان هماهنگ‌تر */
+  --color-accent-dark: #818cf8;         /* indigo-400 - متن داخل پنل‌ها، روشن و قابل دید */
+}
+
+@layer components {
+  .variant-default {
+    @apply text-text-muted hover:text-primary hover:bg-background-secondary transition-all duration-300;
+  }
+
+  .variant-primary {
+    @apply text-primary hover:text-primary-dark transition-all duration-300;
+  }
+
+  .variant-highlight {
+    @apply text-white bg-highlight hover:bg-highlight-dark transition-all duration-300;
+  }
+
+  .tab-active {
+    @apply text-primary border-primary bg-background-white rounded-t-md;
+  }
+
+  .tab-inactive {
+    @apply text-text-muted border-transparent hover:text-primary hover:border-border transition-all duration-300;
+  }
+
+  .card {
+    @apply bg-background-white rounded-xl shadow-lg border border-border;
+  }
+
+  .panel {
+    @apply bg-accent p-4 rounded-lg shadow-inner text-accent-dark font-semibold;
+  }
+
+  .button-active {
+    @apply bg-primary text-white border-primary shadow-md transition-all duration-150;
+  }
+
+  .no-transition {
+    @apply transition-none;
+  }
+}
+
