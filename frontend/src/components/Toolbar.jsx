@@ -606,9 +606,9 @@ const Toolbar = ({ className = "" }) => {
         </div>
       )}
 
-      {/* Crop Tool - Visible when active */}
-      {activeTool === "crop" && canvas && (
-        <div className="absolute left-full top-0 ml-2 z-50">
+      {/* Crop Tool - Always mounted but conditionally visible */}
+      {canvas && (
+        <div className={`absolute left-full top-0 ml-2 z-50 ${activeTool === "crop" ? "" : "hidden"}`}>
           <CropTool canvas={canvas} isActive={activeTool === "crop"} />
         </div>
       )}

@@ -241,11 +241,14 @@ const CropTool = forwardRef(({ canvas, isActive }, ref) => {
 
   // Cancel crop mode
   const cancelCropMode = useCallback(() => {
+    if (!canvas) return;
+
     setCropMode(false);
     removeCropBox();
     canvas.selection = true;
     canvas.defaultCursor = 'default';
     canvas.hoverCursor = 'move';
+    canvas.renderAll();
   }, [removeCropBox, canvas]);
 
   // Apply crop
@@ -443,10 +446,44 @@ const CropTool = forwardRef(({ canvas, isActive }, ref) => {
     canUndo: canUndo
   }), [startCropMode, cancelCropMode, undoCrop, canUndo]);
 
-  // Auto-start crop mode when tool becomes active
+  // Auto-start crop mode when tool becomes active, cleanup when inactive
   useEffect(() => {
+    console.log('🔍 CropTool useEffect - isActive:', isActive, 'canvas:', !!canvas, 'cropMode:', cropMode);
+    console.log('🔍 cropRectRef.current:', !!cropRectRef.current);
+    console.log('🔍 overlaysRef.current length:', overlaysRef.current.length);
+
     if (canvas && isActive) {
-    startCropMode();
+      console.log('✅ Starting crop mode...');
+      startCropMode();
+    } else if (canvas && !isActive && cropRectRef.current) {
+      // Only clean up if there's actually something to clean up
+      console.log('🧹 Cleaning up crop - tool switched to another tool');
+
+      // Clean up immediately when switching to another tool
+      setCropMode(false);
+
+      // Remove crop box and overlays
+      console.log('🗑️ Removing crop rectangle and overlays');
+      overlaysRef.current.forEach(overlay => {
+        console.log('🗑️ Removing overlay:', overlay);
+        canvas.remove(overlay);
+      });
+      overlaysRef.current = [];
+      console.log('🗑️ Removing crop rect');
+      canvas.remove(cropRectRef.current);
+      cropRectRef.current = null;
+
+      canvas.selection = true;
+      canvas.defaultCursor = 'default';
+      canvas.hoverCursor = 'move';
+
+      // Safe render check
+      try {
+        canvas.renderAll();
+        console.log('✅ Cleanup complete, canvas rendered');
+      } catch (err) {
+        console.error('❌ Error rendering canvas:', err);
+      }
     }
   }, [canvas, isActive, startCropMode]);
 
