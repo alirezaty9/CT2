@@ -20,6 +20,7 @@ import { useFormData } from "../contexts/FormDataContext";
 import { useWebSocket } from "../contexts/WebSocketContext";
 import BaslerDisplay from "./Camera/BaslerDisplay";
 import MonitoringDisplay from "./Camera/MonitoringDisplay";
+import HistogramDisplay from "./HistogramDisplay";
 
 // تب‌های بالا
 const tabs = [
@@ -295,8 +296,8 @@ const Layout = () => {
         </div>
 
         {/* هیستوگرام - ارتفاع ثابت */}
-        <div className="card flex-shrink-0 h-40 md:h-44 p-4 text-text dark:text-text font-medium text-center">
-          {t("histogram")}
+        <div className="card flex-shrink-0 h-40 md:h-44 p-4">
+          <HistogramDisplay />
         </div>
       </div>
     </div>

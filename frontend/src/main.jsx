@@ -9,7 +9,8 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { WebChannelProvider } from "./contexts/WebChannelContext";
 import { WebSocketProvider } from "./contexts/WebSocketContext";
 import { FormDataProvider } from "./contexts/FormDataContext";
-import { CameraProvider } from "./contexts/CameraContext"; // ⭐ اضافه شد
+import { CameraProvider } from "./contexts/CameraContext";
+import { HistogramProvider } from "./contexts/HistogramContext";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -19,7 +20,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           <WebSocketProvider>
             <FormDataProvider>
               <CameraProvider>
-                <App />
+                <HistogramProvider>
+                  <App />
+                </HistogramProvider>
               </CameraProvider>
             </FormDataProvider>
           </WebSocketProvider>

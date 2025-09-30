@@ -404,6 +404,60 @@ export const CameraProvider = ({ children }) => {
     });
   }, []);
 
+  // Zoom In
+  const zoomIn = useCallback(() => {
+    setImageSettings(prev => {
+      const newZoom = prev.zoom * 1.2;
+      const clampedZoom = Math.max(0.2, Math.min(5, newZoom));
+      setHistory(history => [...history, { type: 'zoom', action: 'in', value: clampedZoom, prevValue: prev.zoom }]);
+
+      // Apply zoom to Fabric canvas with proper viewport transform
+      if (window.fabricCanvas) {
+        const canvas = window.fabricCanvas;
+        const center = canvas.getCenter();
+        canvas.zoomToPoint({ x: center.left, y: center.top }, clampedZoom);
+        canvas.requestRenderAll();
+      }
+
+      return { ...prev, zoom: clampedZoom };
+    });
+  }, []);
+
+  // Zoom Out
+  const zoomOut = useCallback(() => {
+    setImageSettings(prev => {
+      const newZoom = prev.zoom / 1.2;
+      const clampedZoom = Math.max(0.2, Math.min(5, newZoom));
+      setHistory(history => [...history, { type: 'zoom', action: 'out', value: clampedZoom, prevValue: prev.zoom }]);
+
+      // Apply zoom to Fabric canvas with proper viewport transform
+      if (window.fabricCanvas) {
+        const canvas = window.fabricCanvas;
+        const center = canvas.getCenter();
+        canvas.zoomToPoint({ x: center.left, y: center.top }, clampedZoom);
+        canvas.requestRenderAll();
+      }
+
+      return { ...prev, zoom: clampedZoom };
+    });
+  }, []);
+
+  // Reset Zoom
+  const resetZoom = useCallback(() => {
+    setImageSettings(prev => {
+      setHistory(history => [...history, { type: 'zoom', action: 'reset', value: 1, prevValue: prev.zoom }]);
+
+      // Reset zoom on Fabric canvas
+      if (window.fabricCanvas) {
+        const canvas = window.fabricCanvas;
+        canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+        canvas.requestRenderAll();
+      }
+
+      return { ...prev, zoom: 1 };
+    });
+  }, []);
+
   // جابجایی تصویر
   const panImage = useCallback((dx, dy) => {
     setImageSettings(prev => {
@@ -493,6 +547,9 @@ export const CameraProvider = ({ children }) => {
     updateImageSettings,
     toggleGrayscale,
     zoomImage,
+    zoomIn,
+    zoomOut,
+    resetZoom,
     panImage,
     undoLastChange
   };

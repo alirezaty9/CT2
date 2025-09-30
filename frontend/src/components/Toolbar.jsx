@@ -26,12 +26,14 @@ import {
   Save,
   Download,
   X,
+  BarChart3,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ToolManager } from "./Tools";
 import { BrushTool, LineTool, MoveTool, CropTool } from "./Tools";
 import ZoomTool from "./Tools/ZoomTool.jsx";
 import EraseToolComponent from "./Tools/EraseToolComponent";
+import HistogramTool from "./Tools/HistogramTool.jsx";
 
 // CSS for hiding scrollbar
 const scrollbarHideStyle = `
@@ -70,6 +72,7 @@ const tools = [
   { Icon: LineChart, name: "lineChart", hotkey: "shift+l", category: "shape" },
   { Icon: Move, name: "move", hotkey: "v", category: "nav" },
   { Icon: ZoomIn, name: "zoom", hotkey: "z", category: "view" },
+  { Icon: BarChart3, name: "histogram", hotkey: "h", category: "analyze" },
   { Icon: Palette, name: "grayscale", hotkey: "g", category: "filter" },
   { Icon: Hand, name: "pan", hotkey: "space", category: "nav" },
   { Icon: RotateCcw, name: "undo", hotkey: "ctrl+z", category: "edit" },
@@ -81,7 +84,6 @@ const Toolbar = ({ className = "" }) => {
     activeTool,
     applyTool,
     toggleGrayscale,
-    zoomImage,
     undoLastChange,
     clearDrawings,
     imageSettings,
@@ -140,8 +142,6 @@ const Toolbar = ({ className = "" }) => {
 
       if (name === "grayscale") {
         toggleGrayscale();
-      } else if (name === "zoom") {
-        applyTool(name);
       } else if (name === "undo") {
         undoLastChange();
       } else if (name === "eraser") {
@@ -174,7 +174,6 @@ const Toolbar = ({ className = "" }) => {
     },
     [
       toggleGrayscale,
-      zoomImage,
       undoLastChange,
       applyTool,
       selectedColor,
@@ -617,6 +616,13 @@ const Toolbar = ({ className = "" }) => {
       {activeTool === "zoom" && canvas && (
         <div className="absolute left-full top-0 ml-2 z-50">
           <ZoomTool canvas={canvas} isActive={activeTool === "zoom"} />
+        </div>
+      )}
+
+      {/* Histogram Tool - Always mounted but conditionally visible */}
+      {canvas && (
+        <div className={`absolute left-full top-0 ml-2 z-50 ${activeTool === "histogram" ? "" : "hidden"}`}>
+          <HistogramTool canvas={canvas} isActive={activeTool === "histogram"} />
         </div>
       )}
     </motion.div>

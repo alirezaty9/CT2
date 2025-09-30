@@ -29,6 +29,69 @@ const BaslerDisplay = () => {
     panImage
   } = useCamera();
 
+  // Fabric.js event handlers - defined before initialization
+  const handleFabricPathCreated = useCallback((e) => {
+    console.log('Fabric path created:', e.path);
+
+    // Make brush paths selectable and movable
+    if (e.path) {
+      e.path.set({
+        selectable: true,
+        evented: true
+      });
+    }
+
+    // Reset composite operation after eraser path is created
+    if (activeTool === 'eraser' && fabricCanvasRef.current && fabricCanvasRef.current.contextTop) {
+      // Reset to normal drawing mode after erasing
+      fabricCanvasRef.current.contextTop.globalCompositeOperation = 'source-over';
+    }
+  }, [activeTool]);
+
+  const handleFabricObjectAdded = useCallback((e) => {
+    console.log('Fabric object added:', e.target);
+  }, []);
+
+  const handleFabricMouseDown = useCallback((e) => {
+    console.log('🖱️ Mouse down - Tool:', activeTool);
+  }, [activeTool]);
+
+  const handleFabricMouseMove = useCallback((e) => {
+    if (!fabricCanvasRef.current) return;
+
+    const pointer = fabricCanvasRef.current.getPointer(e.e);
+
+    // Prevent eraser from leaving trails
+    if (activeTool === 'eraser') {
+      if (fabricCanvasRef.current.contextTop) {
+        fabricCanvasRef.current.contextTop.globalCompositeOperation = 'destination-out';
+      }
+    }
+
+    // Pan tool implementation
+    if (activeTool === 'pan') {
+      if (e.e.buttons === 1 && panStartRef.current) {
+        const delta = {
+          x: pointer.x - panStartRef.current.x,
+          y: pointer.y - panStartRef.current.y
+        };
+        panImage(delta.x, delta.y);
+        panStartRef.current = pointer;
+      }
+    }
+
+    // Update Fabric canvas rendering
+    if (fabricCanvasRef.current._isCurrentlyDrawing) {
+      fabricCanvasRef.current.renderAll();
+    }
+  }, [activeTool]);
+
+  const handleFabricMouseUp = useCallback(() => {
+    if (fabricCanvasRef.current) {
+      fabricCanvasRef.current._isCurrentlyDrawing = false;
+    }
+  }, []);
+
   // Initialize Fabric.js canvas
   useEffect(() => {
     if (canvasRef.current && !fabricCanvasRef.current) {
@@ -53,7 +116,7 @@ const BaslerDisplay = () => {
       canvas.on('mouse:down', handleFabricMouseDown);
       canvas.on('mouse:move', handleFabricMouseMove);
       canvas.on('mouse:up', handleFabricMouseUp);
-      
+
       console.log('🎯 Event listeners added to canvas');
 
       // Prevent background image from being selected or moved
@@ -182,87 +245,6 @@ const BaslerDisplay = () => {
       return () => clearTimeout(timeoutId);
     }
   }, [activeTool, cameras.basler.currentFrame, updateFabricBackground]);
-
-  // Fabric.js event handlers
-  const handleFabricPathCreated = useCallback((e) => {
-    console.log('Fabric path created:', e.path);
-    
-    // Make brush paths selectable and movable
-    if (e.path) {
-      e.path.set({
-        selectable: true,
-        evented: true
-      });
-    }
-    
-    // Reset composite operation after eraser path is created
-    if (activeTool === 'eraser' && fabricCanvasRef.current && fabricCanvasRef.current.contextTop) {
-      // Reset to normal drawing mode after erasing
-      setTimeout(() => {
-        if (fabricCanvasRef.current && fabricCanvasRef.current.contextTop) {
-          fabricCanvasRef.current.contextTop.globalCompositeOperation = 'source-over';
-        }
-      }, 50);
-    }
-  }, [activeTool]);
-
-  const handleFabricObjectAdded = useCallback((e) => {
-    console.log('Fabric object added:', e.target);
-  }, []);
-
-  const handleFabricMouseDown = useCallback((e) => {
-    // Mouse handling is now done by individual tool components
-    console.log('🖱️ Mouse down - Tool:', activeTool);
-  }, [activeTool]);
-
-  const handleFabricMouseMove = useCallback((e) => {
-    if (!fabricCanvasRef.current) return;
-
-    const activeObject = fabricCanvasRef.current.getActiveObject();
-    const pointer = fabricCanvasRef.current.getPointer(e.e);
-
-    if (activeTool === 'eraser') {
-      // Change cursor to indicate eraser mode
-      fabricCanvasRef.current.defaultCursor = 'crosshair';
-      
-      // Optional: Highlight objects that can be erased
-      const objects = fabricCanvasRef.current.getObjects();
-      const targetObject = fabricCanvasRef.current.findTarget(e.e, objects);
-      
-      if (targetObject && targetObject !== fabricCanvasRef.current.backgroundImage) {
-        fabricCanvasRef.current.defaultCursor = 'pointer';
-      }
-    } else if (activeTool === 'move') {
-      // For move tool, let Fabric.js handle cursor changes
-      // Don't interfere with the default behavior
-      return;
-    } else if (activeObject && fabricCanvasRef.current._isCurrentlyDrawing) {
-      if (activeObject.type === 'line') {
-        activeObject.set({ x2: pointer.x, y2: pointer.y });
-      } else if (activeObject.type === 'rect') {
-        const origX = activeObject.left;
-        const origY = activeObject.top;
-        activeObject.set({
-          width: Math.abs(pointer.x - origX),
-          height: Math.abs(pointer.y - origY),
-          left: pointer.x < origX ? pointer.x : origX,
-          top: pointer.y < origY ? pointer.y : origY
-        });
-      } else if (activeObject.type === 'circle') {
-        const origX = activeObject.left;
-        const origY = activeObject.top;
-        const radius = Math.sqrt(Math.pow(pointer.x - origX, 2) + Math.pow(pointer.y - origY, 2));
-        activeObject.set({ radius: radius });
-      }
-      fabricCanvasRef.current.renderAll();
-    }
-  }, [activeTool]);
-
-  const handleFabricMouseUp = useCallback(() => {
-    if (fabricCanvasRef.current) {
-      fabricCanvasRef.current._isCurrentlyDrawing = false;
-    }
-  }, []);
 
   // Update background only when frame changes
   useEffect(() => {
