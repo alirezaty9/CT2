@@ -248,10 +248,11 @@ const Toolbar = ({ className = "" }) => {
 
         <motion.button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="p-1.5 rounded-lg hover:bg-background-primary transition-colors"
+          className="p-2 rounded-lg bg-background-primary hover:bg-accent border border-border hover:border-primary transition-all duration-300 shadow-sm hover:shadow-md"
+          whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
         >
-          {isExpanded ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+          {isExpanded ? <ChevronLeft size={16} className="text-primary" /> : <ChevronRight size={16} className="text-primary" />}
         </motion.button>
       </div>
 
@@ -278,40 +279,54 @@ const Toolbar = ({ className = "" }) => {
                   <motion.button
                     onClick={() => handleToolClick(name)}
                     className={twMerge(
-                      "w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200 group",
+                      "w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-300 group font-medium shadow-sm hover:shadow-md",
                       isActive
-                        ? "bg-primary text-primary-foreground shadow-md"
-                        : "hover:bg-background-primary text-text hover:shadow-sm"
+                        ? "bg-gradient-to-r from-primary to-primary-dark text-white shadow-lg shadow-primary/30"
+                        : "bg-background-primary hover:bg-accent text-text hover:text-primary border border-border hover:border-primary"
                     )}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={{ scale: 1.03, y: -2 }}
+                    whileTap={{ scale: 0.97 }}
                   >
-                    <Icon size={20} />
+                    <Icon size={20} className={isActive ? "drop-shadow-md" : ""} />
                     <div className="flex-1 text-left">
-                      <div className="text-sm font-medium">{t(name)}</div>
-                      <div className="text-xs opacity-60">{hotkey}</div>
+                      <div className="text-sm font-semibold">{t(name)}</div>
+                      <div className={twMerge(
+                        "text-xs font-mono",
+                        isActive ? "opacity-80" : "opacity-50"
+                      )}>{hotkey}</div>
                     </div>
                     {isActive && (
                       <motion.div
                         layoutId="activeIndicator"
-                        className="w-2 h-2 bg-current rounded-full"
+                        className="w-2.5 h-2.5 bg-white rounded-full shadow-md"
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 0.5, repeat: Infinity }}
                       />
                     )}
                   </motion.button>
                 ) : (
                   <motion.div className="relative group">
-                    <IconButton
-                      Icon={Icon}
-                      title={`${t(name)} (${hotkey})`}
+                    <motion.button
                       onClick={() => handleToolClick(name)}
-                      variant={isActive ? "primary" : "default"}
-                      size="md"
-                      className="hover:scale-105 relative"
-                    />
+                      className={twMerge(
+                        "p-2.5 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md",
+                        isActive
+                          ? "bg-gradient-to-br from-primary to-primary-dark text-white shadow-lg shadow-primary/30"
+                          : "bg-background-primary hover:bg-accent text-text-muted hover:text-primary border border-border hover:border-primary"
+                      )}
+                      whileHover={{ scale: 1.1, y: -2 }}
+                      whileTap={{ scale: 0.95 }}
+                      title={`${t(name)} (${hotkey})`}
+                    >
+                      <Icon size={20} className={isActive ? "drop-shadow-md" : ""} />
+                    </motion.button>
                     {isActive && (
                       <motion.div
                         layoutId="compactActiveIndicator"
-                        className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-primary rounded-full"
+                        className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-1.5 h-8 bg-gradient-to-b from-primary to-primary-dark rounded-full shadow-md"
+                        initial={{ opacity: 0, x: -5 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -5 }}
                       />
                     )}
                   </motion.div>
@@ -334,13 +349,14 @@ const Toolbar = ({ className = "" }) => {
             {/* Color Picker Button */}
             <motion.button
               onClick={() => setShowColorPicker(!showColorPicker)}
-              className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-background-primary transition-colors"
+              className="w-full flex items-center gap-3 p-3 rounded-xl bg-background-primary hover:bg-accent border border-border hover:border-primary transition-all duration-300 shadow-sm hover:shadow-md"
+              whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
             >
-              <Palette size={16} />
-              <span className="text-sm">انتخاب رنگ</span>
+              <Palette size={18} className="text-primary" />
+              <span className="text-sm font-medium">انتخاب رنگ</span>
               <div
-                className="ml-auto w-4 h-4 rounded border-2 border-white shadow-sm"
+                className="ml-auto w-5 h-5 rounded-lg border-2 border-white shadow-md ring-2 ring-border"
                 style={{ backgroundColor: selectedColor }}
               />
             </motion.button>
@@ -348,31 +364,34 @@ const Toolbar = ({ className = "" }) => {
             {/* Settings Button */}
             <motion.button
               onClick={() => setShowSettings(!showSettings)}
-              className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-background-primary transition-colors"
+              className="w-full flex items-center gap-3 p-3 rounded-xl bg-background-primary hover:bg-accent border border-border hover:border-primary transition-all duration-300 shadow-sm hover:shadow-md"
+              whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
             >
-              <Settings size={16} />
-              <span className="text-sm">تنظیمات</span>
+              <Settings size={18} className="text-primary" />
+              <span className="text-sm font-medium">تنظیمات</span>
             </motion.button>
 
             {/* Quick Actions */}
             <div className="flex gap-2">
               <motion.button
                 onClick={handleSave}
-                className="flex-1 flex items-center justify-center gap-2 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-green-500/30 font-medium"
+                whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <Save size={14} />
-                <span className="text-xs">ذخیره</span>
+                <Save size={16} />
+                <span className="text-xs font-semibold">ذخیره</span>
               </motion.button>
 
               <motion.button
                 onClick={clearDrawings}
-                className="flex-1 flex items-center justify-center gap-2 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-red-500/30 font-medium"
+                whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <X size={14} />
-                <span className="text-xs">پاک</span>
+                <X size={16} />
+                <span className="text-xs font-semibold">پاک</span>
               </motion.button>
             </div>
           </motion.div>
@@ -426,12 +445,14 @@ const Toolbar = ({ className = "" }) => {
               />
             </div>
 
-            <button
+            <motion.button
               onClick={() => setShowColorPicker(false)}
-              className="w-full py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+              className="w-full py-2.5 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl hover:from-primary-dark hover:to-primary transition-all duration-300 shadow-md hover:shadow-lg shadow-primary/30 font-semibold"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
               تأیید
-            </button>
+            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -506,12 +527,14 @@ const Toolbar = ({ className = "" }) => {
               </div>
             </div>
 
-            <button
+            <motion.button
               onClick={() => setShowSettings(false)}
-              className="w-full mt-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+              className="w-full mt-4 py-2.5 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl hover:from-primary-dark hover:to-primary transition-all duration-300 shadow-md hover:shadow-lg shadow-primary/30 font-semibold"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
               بستن
-            </button>
+            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>

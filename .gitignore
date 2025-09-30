@@ -16,6 +16,11 @@
 *.o
 *.out
 
+# Archive files
+*.tar.xz
+*.zip
+*.rar
+
 # فایل‌های کش CMake
 /backend/CMakeCache.txt
 /backend/CMakeFiles/

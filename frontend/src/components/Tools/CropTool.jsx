@@ -1,12 +1,14 @@
 import React, { useRef, useCallback, forwardRef, useImperativeHandle, useEffect, useState } from 'react';
 import { fabric } from 'fabric';
-import { 
-  Crop, 
+import { motion } from 'framer-motion';
+import {
+  Crop,
   Check,
   X,
   Square,
   Maximize,
-  Undo2
+  Undo2,
+  Settings
 } from 'lucide-react';
 
 const CropTool = forwardRef(({ canvas, isActive }, ref) => {
@@ -24,11 +26,21 @@ const CropTool = forwardRef(({ canvas, isActive }, ref) => {
   // Save original image state
   const saveOriginalState = useCallback(() => {
     if (!canvas?.backgroundImage) return;
-    
+
     const bgImage = canvas.backgroundImage;
     const imgElement = bgImage._element || bgImage._originalElement;
     if (!imgElement) return;
-    
+
+    // Save all objects' state
+    const objectsState = canvas.getObjects()
+      .filter(obj => !obj.excludeFromExport)
+      .map(obj => ({
+        object: obj,
+        left: obj.left,
+        top: obj.top,
+        path: obj.path ? JSON.parse(JSON.stringify(obj.path)) : null
+      }));
+
     setOriginalState({
       src: imgElement.src,
       canvasWidth: canvas.width,
@@ -36,7 +48,8 @@ const CropTool = forwardRef(({ canvas, isActive }, ref) => {
       imageScaleX: bgImage.scaleX,
       imageScaleY: bgImage.scaleY,
       imageLeft: bgImage.left,
-      imageTop: bgImage.top
+      imageTop: bgImage.top,
+      objectsState: objectsState
     });
     setCanUndo(true);
   }, [canvas]);
@@ -44,11 +57,11 @@ const CropTool = forwardRef(({ canvas, isActive }, ref) => {
   // Undo crop
   const undoCrop = useCallback(() => {
     if (!canvas || !originalState) return;
-    
+
     // Restore canvas size
     canvas.setWidth(originalState.canvasWidth);
     canvas.setHeight(originalState.canvasHeight);
-    
+
     const htmlCanvas = canvas.getElement();
     if (htmlCanvas) {
       htmlCanvas.width = originalState.canvasWidth;
@@ -56,7 +69,26 @@ const CropTool = forwardRef(({ canvas, isActive }, ref) => {
       htmlCanvas.style.width = `${originalState.canvasWidth}px`;
       htmlCanvas.style.height = `${originalState.canvasHeight}px`;
     }
-    
+
+    // Restore all objects' positions and paths
+    if (originalState.objectsState) {
+      originalState.objectsState.forEach(savedState => {
+        const obj = savedState.object;
+
+        // Restore position
+        obj.set({
+          left: savedState.left,
+          top: savedState.top
+        });
+
+        // Restore path data for brush strokes
+        if (savedState.path && obj.path) {
+          obj.path = JSON.parse(JSON.stringify(savedState.path));
+          obj.setCoords();
+        }
+      });
+    }
+
     // Restore background image
     fabric.Image.fromURL(originalState.src, (img) => {
       img.set({
@@ -67,12 +99,12 @@ const CropTool = forwardRef(({ canvas, isActive }, ref) => {
         selectable: false,
         evented: false
       });
-      
+
       canvas.setBackgroundImage(img, () => {
         canvas.renderAll();
         setCanUndo(false);
         setOriginalState(null);
-        
+
         // Dispatch resize event
         window.dispatchEvent(new CustomEvent('canvasResized', {
           detail: { width: originalState.canvasWidth, height: originalState.canvasHeight, canvas }
@@ -219,34 +251,41 @@ const CropTool = forwardRef(({ canvas, isActive }, ref) => {
   // Apply crop
   const applyCrop = useCallback(() => {
     if (!cropRectRef.current || !canvas?.backgroundImage) return;
-    
+
     const cropRect = cropRectRef.current;
     const bgImage = canvas.backgroundImage;
     const imgElement = bgImage._element || bgImage._originalElement;
-    
+
     if (!imgElement) return;
-    
+
     // Save original state
     saveOriginalState();
-    
+
     // Get actual crop dimensions
     const actualWidth = cropRect.width * cropRect.scaleX;
     const actualHeight = cropRect.height * cropRect.scaleY;
-    
+    const cropLeft = cropRect.left;
+    const cropTop = cropRect.top;
+
+    // Get all objects (excluding overlays and crop rectangle)
+    const objects = canvas.getObjects().filter(obj =>
+      !obj.excludeFromExport && obj !== cropRectRef.current && !overlaysRef.current.includes(obj)
+    );
+
     // Calculate scale factors from canvas to original image
     const originalWidth = imgElement.naturalWidth || imgElement.width;
     const originalHeight = imgElement.naturalHeight || imgElement.height;
     const scaleX = originalWidth / canvas.width;
     const scaleY = originalHeight / canvas.height;
-    
+
     // Convert crop coordinates to original image coordinates
     const cropData = {
-      left: cropRect.left * scaleX,
-      top: cropRect.top * scaleY,
+      left: cropLeft * scaleX,
+      top: cropTop * scaleY,
       width: actualWidth * scaleX,
       height: actualHeight * scaleY
     };
-    
+
     // Ensure crop is within image bounds
     const clampedCrop = {
       left: Math.max(0, Math.min(cropData.left, originalWidth)),
@@ -254,17 +293,17 @@ const CropTool = forwardRef(({ canvas, isActive }, ref) => {
       width: Math.min(cropData.width, originalWidth - Math.max(0, cropData.left)),
       height: Math.min(cropData.height, originalHeight - Math.max(0, cropData.top))
     };
-    
-    // Create crop canvas
+
+    // Create crop canvas for background
     const cropCanvas = document.createElement('canvas');
     cropCanvas.width = Math.max(1, Math.round(clampedCrop.width));
     cropCanvas.height = Math.max(1, Math.round(clampedCrop.height));
     const cropCtx = cropCanvas.getContext('2d');
-    
+
     // Enable high quality image smoothing
     cropCtx.imageSmoothingEnabled = true;
     cropCtx.imageSmoothingQuality = 'high';
-    
+
     // Draw cropped portion
     cropCtx.drawImage(
       imgElement,
@@ -276,13 +315,13 @@ const CropTool = forwardRef(({ canvas, isActive }, ref) => {
       Math.round(clampedCrop.width),
       Math.round(clampedCrop.height)
     );
-    
+
     // Create new fabric image
     fabric.Image.fromURL(cropCanvas.toDataURL(), (newImg) => {
       // Center the image in the canvas
       const centerX = actualWidth / 2;
       const centerY = actualHeight / 2;
-      
+
       newImg.set({
         left: centerX,
         top: centerY,
@@ -293,11 +332,48 @@ const CropTool = forwardRef(({ canvas, isActive }, ref) => {
         selectable: false,
         evented: false
       });
-      
+
+      // Adjust all objects to match the crop
+      objects.forEach(obj => {
+        // Calculate new position relative to crop
+        const newLeft = obj.left - cropLeft;
+        const newTop = obj.top - cropTop;
+
+        obj.set({
+          left: newLeft,
+          top: newTop
+        });
+
+        // For path objects (brush strokes), adjust path data
+        if (obj.path) {
+          obj.path.forEach(segment => {
+            if (segment.length > 1) {
+              segment[1] -= cropLeft; // x coordinate
+            }
+            if (segment.length > 2) {
+              segment[2] -= cropTop;  // y coordinate
+            }
+            if (segment.length > 3) {
+              segment[3] -= cropLeft; // control point x1
+            }
+            if (segment.length > 4) {
+              segment[4] -= cropTop;  // control point y1
+            }
+            if (segment.length > 5) {
+              segment[5] -= cropLeft; // control point x2
+            }
+            if (segment.length > 6) {
+              segment[6] -= cropTop;  // control point y2
+            }
+          });
+          obj.setCoords();
+        }
+      });
+
       // Resize canvas to match crop
       canvas.setWidth(actualWidth);
       canvas.setHeight(actualHeight);
-      
+
       const htmlCanvas = canvas.getElement();
       if (htmlCanvas) {
         htmlCanvas.width = actualWidth;
@@ -305,12 +381,12 @@ const CropTool = forwardRef(({ canvas, isActive }, ref) => {
         htmlCanvas.style.width = `${actualWidth}px`;
         htmlCanvas.style.height = `${actualHeight}px`;
       }
-      
+
       // Set new background image
       canvas.setBackgroundImage(newImg, () => {
         canvas.renderAll();
         cancelCropMode();
-        
+
         // Dispatch resize event
         window.dispatchEvent(new CustomEvent('canvasResized', {
           detail: { width: actualWidth, height: actualHeight, canvas }
@@ -393,150 +469,135 @@ const CropTool = forwardRef(({ canvas, isActive }, ref) => {
 
   // Aspect ratio presets
   const aspectRatios = [
-    { value: 'free', label: 'Free', icon: Maximize },
-    { value: 'square', label: '1:1', icon: Square },
-    { value: '16:9', label: '16:9', icon: Square },
-    { value: '4:3', label: '4:3', icon: Square }
+    { value: 'free', label: 'Free', icon: Maximize }
   ];
   
   return (
-    <div className="crop-tool p-3 border-t border-gray-200 bg-white shadow-lg">
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      className="w-80 bg-background-white dark:bg-background-secondary rounded-2xl shadow-2xl border border-border p-6"
+    >
       {!showPanel && !cropMode ? (
         // Minimal view
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-700">🔲 Crop Tool</span>
-          <button
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-md">
+              <Crop size={20} />
+            </div>
+            <span className="text-base font-semibold text-text">Crop Tool</span>
+          </div>
+          <motion.button
             onClick={() => setShowPanel(true)}
-            className="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
+            className="px-4 py-2 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl hover:from-primary-dark hover:to-primary transition-all duration-300 shadow-md hover:shadow-lg shadow-primary/30 text-sm font-semibold"
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
           >
-            Settings
-          </button>
+            <Settings size={16} />
+          </motion.button>
         </div>
       ) : cropMode ? (
         // Crop mode active
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium text-blue-700">🔲 Crop Mode Active</span>
-            <div className="flex gap-1">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <motion.div
+                className="p-2 rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md"
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <Crop size={20} />
+              </motion.div>
+              <span className="text-base font-semibold text-primary">Crop Active</span>
+            </div>
+            <div className="flex gap-2">
               {canUndo && (
-                <button
+                <motion.button
                   onClick={undoCrop}
-                  className="px-2 py-1 bg-orange-500 text-white rounded text-xs hover:bg-orange-600"
+                  className="p-2.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-orange-500/30"
+                  whileHover={{ scale: 1.1, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
                   title="Undo Last Crop"
                 >
-                  <Undo2 size={12} />
-                </button>
+                  <Undo2 size={16} />
+                </motion.button>
               )}
-              <button
+              <motion.button
                 onClick={applyCrop}
-                className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600"
+                className="p-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-green-500/30"
+                whileHover={{ scale: 1.1, y: -2 }}
+                whileTap={{ scale: 0.95 }}
                 title="Apply Crop"
               >
-                <Check size={12} />
-              </button>
-              <button
+                <Check size={16} />
+              </motion.button>
+              <motion.button
                 onClick={cancelCropMode}
-                className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600"
+                className="p-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-red-500/30"
+                whileHover={{ scale: 1.1, y: -2 }}
+                whileTap={{ scale: 0.95 }}
                 title="Cancel"
               >
-                <X size={12} />
-              </button>
+                <X size={16} />
+              </motion.button>
             </div>
           </div>
-          
-          <div className="text-xs text-blue-600 mb-2">
-            {aspectRatio === 'free' 
-              ? 'Click and drag to draw crop area, then drag to adjust. Click ✓ to apply or ✕ to cancel.'
-              : 'Drag the crop area to adjust. Click ✓ to apply or ✕ to cancel.'
-            }
-          </div>
-          
-          {/* Aspect Ratio Controls */}
-          <div className="mb-3">
-            <label className="block text-xs text-gray-600 mb-1">Aspect Ratio</label>
-            <div className="grid grid-cols-2 gap-1">
-              {aspectRatios.map(ratio => (
-                <button
-                  key={ratio.value}
-                  onClick={() => {
-                    setAspectRatio(ratio.value);
-                    if (cropRectRef.current) {
-                      removeCropBox();
-                      startCropMode();
-                    }
-                  }}
-                  className={`px-2 py-1 text-xs rounded ${
-                    aspectRatio === ratio.value
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  {ratio.label}
-                </button>
-              ))}
-            </div>
+
+          <div className="p-4 bg-accent dark:bg-background-primary rounded-xl border border-border">
+            <p className="text-sm text-text leading-relaxed">
+              🎯 Click and drag to draw crop area, then adjust as needed. Click ✓ to apply or ✕ to cancel.
+            </p>
           </div>
         </div>
       ) : (
         // Full settings panel
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium text-gray-700">🔲 Crop Tool</span>
-            <button
+        <div className="space-y-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-md">
+                <Crop size={20} />
+              </div>
+              <span className="text-base font-semibold text-text">Crop Settings</span>
+            </div>
+            <motion.button
               onClick={() => setShowPanel(false)}
-              className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600"
+              className="p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all duration-300 shadow-sm hover:shadow-md"
+              whileHover={{ scale: 1.1, y: -2 }}
+              whileTap={{ scale: 0.95 }}
             >
-              ✕
-            </button>
+              <X size={16} />
+            </motion.button>
           </div>
-          
+
           {/* Main Actions */}
-          <div className="mb-4">
-            <button
+          <div className="space-y-3">
+            <motion.button
               onClick={startCropMode}
-              className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl hover:from-primary-dark hover:to-primary transition-all duration-300 shadow-md hover:shadow-lg shadow-primary/30 font-semibold"
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <Crop size={16} />
-              <span className="text-sm">Start Crop</span>
-            </button>
-            
+              <Crop size={18} />
+              <span>Start Crop</span>
+            </motion.button>
+
             {canUndo && (
-              <button
+              <motion.button
                 onClick={undoCrop}
-                className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors mt-2"
+                className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-orange-500/30 font-semibold"
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
               >
-                <Undo2 size={16} />
-                <span className="text-sm">Undo Last Crop</span>
-              </button>
+                <Undo2 size={18} />
+                <span>Undo Last Crop</span>
+              </motion.button>
             )}
           </div>
-          
-          {/* Aspect Ratio Selection */}
-          <div className="mb-4">
-            <label className="block text-xs text-gray-600 mb-2">Aspect Ratio</label>
-            <div className="grid grid-cols-2 gap-1">
-              {aspectRatios.map(ratio => {
-                const IconComponent = ratio.icon;
-                return (
-                  <button
-                    key={ratio.value}
-                    onClick={() => setAspectRatio(ratio.value)}
-                    className={`flex items-center gap-1 px-2 py-1 text-xs rounded ${
-                      aspectRatio === ratio.value
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                  >
-                    <IconComponent size={12} />
-                    {ratio.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+
         </div>
       )}
-    </div>
+    </motion.div>
   );
 });
 
