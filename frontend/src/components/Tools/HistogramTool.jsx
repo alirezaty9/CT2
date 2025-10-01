@@ -83,6 +83,15 @@ const HistogramTool = ({ canvas, isActive }) => {
     };
   }, []);
 
+  // Remove selection object
+  const removeSelectionObject = useCallback(() => {
+    if (selectionObjectRef.current && canvas) {
+      canvas.remove(selectionObjectRef.current);
+      selectionObjectRef.current = null;
+      canvas.renderAll();
+    }
+  }, [canvas]);
+
   // Point selection
   const handlePointSelection = useCallback((pointer) => {
     const x = Math.round(pointer.x);
@@ -112,11 +121,32 @@ const HistogramTool = ({ canvas, isActive }) => {
       const histogram = calculateHistogramFromData(imageData.data);
       console.log('  Histogram calculated - Red channel sample:', histogram.red.slice(0, 10));
 
-      updateHistogram(histogram, { x, y, pixel: pixelData, mode: 'point' });
+      // Create visual indicator for point selection
+      const circle = new fabric.Circle({
+        left: x,
+        top: y,
+        radius: radius,
+        fill: 'transparent',
+        stroke: '#3b82f6',
+        strokeWidth: 2,
+        originX: 'center',
+        originY: 'center',
+        selectable: false,
+        evented: false
+      });
+
+      const region = { type: 'point', x, y, radius, fabricObject: circle };
+      updateHistogram(histogram, { x, y, pixel: pixelData, mode: 'point' }, region);
+
+      // Add circle to canvas
+      removeSelectionObject();
+      selectionObjectRef.current = circle;
+      canvas.add(circle);
+      canvas.renderAll();
     } catch (err) {
       console.error('❌ Error calculating histogram:', err);
     }
-  }, [canvas, getPixelData, calculateHistogramFromData, updateHistogram]);
+  }, [canvas, getPixelData, calculateHistogramFromData, updateHistogram, removeSelectionObject]);
 
   // Area selection
   const handleAreaSelection = useCallback((x1, y1, x2, y2) => {
@@ -142,6 +172,20 @@ const HistogramTool = ({ canvas, isActive }) => {
       console.log('  Average pixel:', avgPixel);
       console.log('  Histogram calculated - Red channel sample:', histogram.red.slice(0, 10));
 
+      // Keep the rectangle visible on canvas
+      const rect = new fabric.Rect({
+        left: left,
+        top: top,
+        width: width,
+        height: height,
+        fill: 'transparent',
+        stroke: '#3b82f6',
+        strokeWidth: 2,
+        selectable: false,
+        evented: false
+      });
+
+      const region = { type: 'area', left, top, width, height, fabricObject: rect };
       updateHistogram(histogram, {
         x: Math.round((x1 + x2) / 2),
         y: Math.round((y1 + y2) / 2),
@@ -149,7 +193,12 @@ const HistogramTool = ({ canvas, isActive }) => {
         mode: 'area',
         width,
         height
-      });
+      }, region);
+
+      // Keep rect visible - don't remove it
+      selectionObjectRef.current = rect;
+      canvas.add(rect);
+      canvas.renderAll();
     } catch (err) {
       console.error('❌ Error calculating histogram:', err);
     }
@@ -201,26 +250,31 @@ const HistogramTool = ({ canvas, isActive }) => {
       console.log('  Average pixel:', avgPixel);
       console.log('  Histogram calculated - Red channel sample:', histogram.red.slice(0, 10));
 
+      // Keep the line visible on canvas
+      const line = new fabric.Line([x1, y1, x2, y2], {
+        stroke: '#3b82f6',
+        strokeWidth: 2,
+        selectable: false,
+        evented: false
+      });
+
+      const region = { type: 'line', x1, y1, x2, y2, length, fabricObject: line };
       updateHistogram(histogram, {
         x: Math.round((x1 + x2) / 2),
         y: Math.round((y1 + y2) / 2),
         pixel: avgPixel,
         mode: 'line',
         length
-      });
+      }, region);
+
+      // Keep line visible - don't remove it
+      selectionObjectRef.current = line;
+      canvas.add(line);
+      canvas.renderAll();
     } catch (err) {
       console.error('❌ Error calculating histogram:', err);
     }
   }, [canvas, calculateHistogramFromData, calculateAveragePixel, updateHistogram]);
-
-  // Remove selection object
-  const removeSelectionObject = useCallback(() => {
-    if (selectionObjectRef.current && canvas) {
-      canvas.remove(selectionObjectRef.current);
-      selectionObjectRef.current = null;
-      canvas.renderAll();
-    }
-  }, [canvas]);
 
   // Mouse down handler
   const handleMouseDown = useCallback((e) => {
@@ -286,12 +340,12 @@ const HistogramTool = ({ canvas, isActive }) => {
       handleLineSelection(Math.round(startPoint.x), Math.round(startPoint.y), Math.round(pointer.x), Math.round(pointer.y));
     }
 
-    removeSelectionObject();
+    // Don't remove selection object - keep it visible
     setIsSelecting(false);
     setStartPoint(null);
     canvas.defaultCursor = 'default';
     canvas.hoverCursor = 'move';
-  }, [canvas, isActive, isSelecting, startPoint, selectionMode, handleAreaSelection, handleLineSelection, removeSelectionObject]);
+  }, [canvas, isActive, isSelecting, startPoint, selectionMode, handleAreaSelection, handleLineSelection]);
 
   // Start selection
   const startSelection = useCallback(() => {

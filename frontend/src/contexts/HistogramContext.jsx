@@ -14,15 +14,18 @@ export const HistogramProvider = ({ children }) => {
   const [histogramData, setHistogramData] = useState(null);
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [currentChannel, setCurrentChannel] = useState('gray');
+  const [selectionRegion, setSelectionRegion] = useState(null);
 
-  const updateHistogram = useCallback((data, point) => {
+  const updateHistogram = useCallback((data, point, region = null) => {
     setHistogramData(data);
     setSelectedPoint(point);
+    setSelectionRegion(region);
   }, []);
 
   const clearHistogram = useCallback(() => {
     setHistogramData(null);
     setSelectedPoint(null);
+    setSelectionRegion(null);
   }, []);
 
   const changeChannel = useCallback((channel) => {
@@ -35,6 +38,7 @@ export const HistogramProvider = ({ children }) => {
         histogramData,
         selectedPoint,
         currentChannel,
+        selectionRegion,
         updateHistogram,
         clearHistogram,
         changeChannel,

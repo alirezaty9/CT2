@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { BarChart3 } from 'lucide-react';
 
 const HistogramDisplay = () => {
-  const { histogramData, selectedPoint, currentChannel, changeChannel } = useHistogram();
+  const { histogramData, selectedPoint, currentChannel, selectionRegion, changeChannel } = useHistogram();
   const canvasRef = useRef(null);
 
   // Draw histogram chart
@@ -57,12 +57,40 @@ const HistogramDisplay = () => {
     <div className="h-full flex gap-2">
       {/* Left side - Info */}
       <div className="flex flex-col gap-2 justify-center" style={{ minWidth: '180px', maxWidth: '180px' }}>
-        {/* Selected Point */}
+        {/* Selected Point or Area Info */}
         <div className="bg-accent dark:bg-background-primary rounded-lg px-2 py-1 border border-border">
-          <div className="text-xs text-text-muted">Point</div>
-          <div className="font-mono text-xs font-semibold text-text">
-            ({selectedPoint.x}, {selectedPoint.y})
-          </div>
+          {selectionRegion?.type === 'point' && (
+            <>
+              <div className="text-xs text-text-muted">Point (R={selectionRegion.radius}px)</div>
+              <div className="font-mono text-xs font-semibold text-text">
+                ({selectedPoint.x}, {selectedPoint.y})
+              </div>
+            </>
+          )}
+          {selectionRegion?.type === 'area' && (
+            <>
+              <div className="text-xs text-text-muted">Area {selectionRegion.width}×{selectionRegion.height}px</div>
+              <div className="font-mono text-xs font-semibold text-text">
+                ({selectedPoint.x}, {selectedPoint.y})
+              </div>
+            </>
+          )}
+          {selectionRegion?.type === 'line' && (
+            <>
+              <div className="text-xs text-text-muted">Line ({selectionRegion.length}px)</div>
+              <div className="font-mono text-xs font-semibold text-text">
+                ({selectedPoint.x}, {selectedPoint.y})
+              </div>
+            </>
+          )}
+          {!selectionRegion && (
+            <>
+              <div className="text-xs text-text-muted">Point</div>
+              <div className="font-mono text-xs font-semibold text-text">
+                ({selectedPoint.x}, {selectedPoint.y})
+              </div>
+            </>
+          )}
         </div>
 
         {/* Pixel Values */}

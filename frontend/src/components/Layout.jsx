@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { twMerge } from "tailwind-merge";
 import {
@@ -7,17 +7,13 @@ import {
   Focus,
   ImagePlus,
   Wrench,
-  Play,
   Settings,
   Sparkles,
 } from "lucide-react";
-import Swal from "sweetalert2";
 import BaslerTools from "./Toolbar";
 import TabNav from "./TabNav";
 import IconButton from "./common/IconButton";
 import { useTranslation } from "react-i18next";
-import { useFormData } from "../contexts/FormDataContext";
-import { useWebSocket } from "../contexts/WebSocketContext";
 import BaslerDisplay from "./Camera/BaslerDisplay";
 import MonitoringDisplay from "./Camera/MonitoringDisplay";
 import HistogramDisplay from "./HistogramDisplay";
@@ -87,45 +83,6 @@ const Layout = () => {
 
   const [activeButton, setActiveButton] = useState(defaultActive);
   const { t, i18n } = useTranslation();
-  const { getAllFormData } = useFormData();
-  const { send, isConnected, addMessageCallback, removeMessageCallback } =
-    useWebSocket();
-  const [response, setResponse] = useState("");
-
-  useEffect(() => {
-    const handleMessage = (message) => {
-      // console.log("📬 پاسخ از WebSocket:", message);
-      if (message.startsWith("response:")) {
-        const content = message.slice("response:".length);
-        setResponse(content);
-        if (content === t("dataSubmittedSuccessfully")) {
-          Swal.fire({
-            title: t("success"),
-            text: t("dataSubmittedSuccessfully"),
-            icon: "success",
-            confirmButtonText: t("ok"),
-            confirmButtonColor: "#16a34a",
-            customClass: {
-              confirmButton: "swal-confirm-button",
-            },
-          });
-        } else if (content.includes("Error")) {
-          Swal.fire({
-            title: t("error"),
-            text: content,
-            icon: "error",
-            confirmButtonText: t("ok"),
-            confirmButtonColor: "#16a34a",
-            customClass: {
-              confirmButton: "swal-confirm-button",
-            },
-          });
-        }
-      }
-    };
-    addMessageCallback(handleMessage);
-    return () => removeMessageCallback(handleMessage);
-  }, [addMessageCallback, removeMessageCallback, t]);
 
   const handleButtonClick = useCallback((name) => {
     setActiveButton(name);
@@ -139,97 +96,6 @@ const Layout = () => {
     [i18n]
   );
 
-  // اعتبارسنجی داده‌های initialParameters
-  const validateInitialParameters = (data) => {
-    if (!data.initialParameters) return true;
-    const { power, tubeVoltage, anodeCurrent } = data.initialParameters;
-    if (power && (isNaN(power) || power < 0)) {
-      console.warn("⚠️ اعتبارسنجی ناموفق: توان نامعتبر", power);
-      return false;
-    }
-    if (tubeVoltage && (isNaN(tubeVoltage) || tubeVoltage < 0)) {
-      console.warn("⚠️ اعتبارسنجی ناموفق: ولتاژ تیوب نامعتبر", tubeVoltage);
-      return false;
-    }
-    if (anodeCurrent && (isNaN(anodeCurrent) || anodeCurrent < 0)) {
-      console.warn("⚠️ اعتبارسنجی ناموفق: جریان آند نامعتبر", anodeCurrent);
-      return false;
-    }
-    return true;
-  };
-
-  const handleSubmitAll = async () => {
-    const allData = getAllFormData();
-    console.log("📋 داده‌های جمع‌آوری‌شده برای ارسال:", allData);
-
-    if (Object.keys(allData).length === 0) {
-      console.warn("⚠️ هیچ داده‌ای برای ارسال وجود ندارد");
-      setResponse(t("noDataAvailable"));
-      Swal.fire({
-        title: t("error"),
-        text: t("noDataToSubmit"),
-        icon: "warning",
-        confirmButtonText: t("ok"),
-        confirmButtonColor: "#16a34a",
-        customClass: {
-          confirmButton: "swal-confirm-button",
-        },
-      });
-      return;
-    }
-
-    if (!validateInitialParameters(allData)) {
-      console.warn("⚠️ داده‌های initialParameters نامعتبر هستند");
-      Swal.fire({
-        title: t("error"),
-        text: t("invalidInitialParameters"),
-        icon: "error",
-        confirmButtonText: t("ok"),
-        confirmButtonColor: "#16a34a",
-        customClass: {
-          confirmButton: "swal-confirm-button",
-        },
-      });
-      return;
-    }
-
-    const result = await Swal.fire({
-      title: t("areYouSure"),
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonText: t("confirm"),
-      cancelButtonText: t("cancel"),
-      confirmButtonColor: "#16a34a",
-      cancelButtonColor: "#ef4444",
-      customClass: {
-        confirmButton: "swal-confirm-button",
-        cancelButton: "swal-cancel-button",
-      },
-    });
-
-    if (result.isConfirmed) {
-      const message = `AllFormData:${JSON.stringify(allData)}`;
-      console.log("🚀 پیام ارسالی به بکند:", message);
-
-      if (send(message)) {
-        console.log("✅ پیام با موفقیت از طریق WebSocket ارسال شد");
-        setResponse(t("sendingData"));
-      } else {
-        console.error("❌ خطا در ارسال پیام از طریق WebSocket");
-        Swal.fire({
-          title: t("error"),
-          text: t("failedToSendData"),
-          icon: "error",
-          confirmButtonText: t("ok"),
-          confirmButtonColor: "#16a34a",
-          customClass: {
-            confirmButton: "swal-confirm-button",
-          },
-        });
-      }
-    }
-  };
-
   return (
     <div className="flex flex-col md:flex-row min-h-screen max-h-screen gap-4 p-4 bg-background dark:bg-background overflow-hidden">
       {/* ستون چپ - 2/3 عرض */}
@@ -241,17 +107,6 @@ const Layout = () => {
               tabs={tabs.map((tab) => ({ ...tab, label: t(tab.label) }))}
             />
             <div className="flex gap-2 items-center">
-              <IconButton
-                Icon={Play}
-                title={t("run")}
-                variant={activeButton === "Run" ? "primary" : "default"}
-                size="md"
-                onClick={() => {
-                  handleButtonClick("Run");
-                  handleSubmitAll();
-                }}
-                disabled={!isConnected}
-              />
               <Link to="/settings">
                 <IconButton
                   Icon={Settings}
@@ -269,7 +124,6 @@ const Layout = () => {
             <div className="h-full overflow-auto rounded-md">
               <Outlet />
             </div>
-            {response && <p className="text-green-600 mt-2">{response}</p>}
           </div>
 
           {/* وضعیت سیستم / دوربین - ارتفاع ثابت */}
