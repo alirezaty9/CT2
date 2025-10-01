@@ -33,11 +33,14 @@ const BaslerDisplay = () => {
   const handleFabricPathCreated = useCallback((e) => {
     console.log('Fabric path created:', e.path);
 
-    // Make brush paths selectable and movable
+    // Make brush paths potentially selectable (will be controlled by move tool)
     if (e.path) {
       e.path.set({
-        selectable: true,
-        evented: true
+        selectable: activeTool === 'move',
+        evented: activeTool === 'move',
+        hasControls: true,
+        hasBorders: true,
+        lockRotation: false
       });
     }
 
@@ -189,13 +192,38 @@ const BaslerDisplay = () => {
   // Simple tool setup - now handled by individual tool components
   const setupFabricTools = useCallback((canvas) => {
     if (!canvas) return;
-    
+
     // Reset canvas settings
     canvas.isDrawingMode = false;
     canvas.selection = true;
     canvas.defaultCursor = 'default';
     canvas.hoverCursor = 'move';
-    
+
+    // Make all objects selectable and movable when in move mode
+    if (activeTool === 'move') {
+      canvas.getObjects().forEach(obj => {
+        if (obj !== canvas.backgroundImage) {
+          obj.set({
+            selectable: true,
+            evented: true,
+            hasControls: true,
+            hasBorders: true,
+            lockRotation: false
+          });
+        }
+      });
+    } else {
+      // Make objects non-selectable when using other tools
+      canvas.getObjects().forEach(obj => {
+        if (obj !== canvas.backgroundImage) {
+          obj.set({
+            selectable: false,
+            evented: false
+          });
+        }
+      });
+    }
+
     // Configure canvas based on active tool
     if (activeTool === 'crop') {
       console.log('🔲 Configuring crop tool in BaslerDisplay...');
@@ -212,7 +240,7 @@ const BaslerDisplay = () => {
       canvas.selection = true;
       canvas.defaultCursor = 'default';
       canvas.hoverCursor = 'move';
-      console.log('✋ Move tool configured');
+      console.log('✋ Move tool configured - all objects are now selectable');
     } else if (activeTool === 'brush' || activeTool === 'line') {
       canvas.isDrawingMode = true;
       canvas.selection = false;
@@ -220,7 +248,8 @@ const BaslerDisplay = () => {
       canvas.hoverCursor = 'crosshair';
       console.log('🖌️ Drawing tool configured:', activeTool);
     }
-    
+
+    canvas.renderAll();
     console.log('🔧 Canvas initialized for tool components - Active tool:', activeTool);
   }, [activeTool]);
 
