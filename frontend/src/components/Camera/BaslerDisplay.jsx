@@ -31,7 +31,30 @@ const BaslerDisplay = () => {
 
   // Fabric.js event handlers - defined before initialization
   const handleFabricPathCreated = useCallback((e) => {
-    console.log('Fabric path created:', e.path);
+    console.log('✏️ ==================== PATH CREATED ====================');
+    console.log('Path object:', e.path);
+    console.log('Path type:', e.path?.type);
+    console.log('Path position - left:', e.path?.left, 'top:', e.path?.top);
+    console.log('Stroke width:', e.path?.strokeWidth);
+
+    if (e.path && e.path.path) {
+      console.log('Path data (first 10 points):');
+      const pathPoints = e.path.path.slice(0, 10);
+      pathPoints.forEach((point, idx) => {
+        console.log(`  Point ${idx}:`, point);
+      });
+      console.log('Total points in path:', e.path.path.length);
+
+      // Log bounding box
+      const bounds = e.path.getBoundingRect();
+      console.log('Bounding box:', {
+        left: bounds.left,
+        top: bounds.top,
+        width: bounds.width,
+        height: bounds.height
+      });
+    }
+    console.log('======================================================');
 
     // Make brush paths potentially selectable (will be controlled by move tool)
     if (e.path) {
@@ -40,7 +63,9 @@ const BaslerDisplay = () => {
         evented: activeTool === 'move',
         hasControls: true,
         hasBorders: true,
-        lockRotation: false
+        lockRotation: false,
+        perPixelTargetFind: true, // فقط stroke واقعی قابل انتخاب باشد
+        targetFindTolerance: 4 // تلورانس برای انتخاب
       });
     }
 
@@ -208,7 +233,9 @@ const BaslerDisplay = () => {
             evented: true,
             hasControls: true,
             hasBorders: true,
-            lockRotation: false
+            lockRotation: false,
+            perPixelTargetFind: true, // فقط stroke واقعی قابل انتخاب
+            targetFindTolerance: 4 // تلورانس 4 پیکسل
           });
         }
       });

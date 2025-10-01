@@ -114,17 +114,20 @@ const EraseToolComponent = ({
 
     e.e?.preventDefault?.();
     e.e?.stopPropagation?.();
-    
+
     canvas.discardActiveObject();
 
     const pointer = canvas.getPointer(e.e);
-    
+
     isMouseDownRef.current = true;
     setIsErasing(true);
     lastErasePosRef.current = pointer;
-    
-    console.log('🧹 Erasing started at:', pointer);
-    
+
+    console.log('\n\n🧹🧹🧹 =============== MOUSE DOWN - ERASING STARTED ===============');
+    console.log('📍 Mouse down at:', pointer);
+    console.log('🎨 Canvas objects count:', canvas.getObjects().length);
+    console.log('⚙️ isMouseDownRef.current:', isMouseDownRef.current);
+
     // Start erasing immediately
     performEraseAction(pointer);
   }, [canvas, isActive]);
@@ -136,20 +139,41 @@ const EraseToolComponent = ({
     const pointer = canvas.getPointer(e.e);
     setPreviewPosition(pointer);
 
-    if (isMouseDownRef.current) {
-      performEraseAction(pointer);
+    // رندر فوری پیش‌نمایش
+    const ctx = canvas.contextTop;
+    if (ctx) {
+      ctx.save();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = '#ff0000';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.arc(pointer.x, pointer.y, settings.size / 2, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
     }
-  }, [canvas, isActive]);
+
+    if (isMouseDownRef.current) {
+      console.log('🖱️ MOUSE MOVE (dragging) at:', pointer, '| isMouseDown:', isMouseDownRef.current);
+      performEraseAction(pointer);
+    } else {
+      // Just hovering, not erasing
+      console.log('👆 MOUSE MOVE (hover) at:', pointer, '| isMouseDown:', isMouseDownRef.current);
+    }
+  }, [canvas, isActive, settings.size]);
 
   // مدیریت پایان پاک کردن
   const handleMouseUp = useCallback(() => {
     if (!canvas || !isActive) return;
 
+    console.log('🛑 =============== MOUSE UP - ERASING FINISHED ===============');
+    console.log('⚙️ Setting isMouseDownRef.current to false');
+
     isMouseDownRef.current = false;
     setIsErasing(false);
     lastErasePosRef.current = null;
-    
-    console.log('🧹 Erasing finished');
+
+    console.log('✅ Erasing session ended\n\n');
   }, [canvas, isActive]);
 
   // مدیریت خروج ماوس از canvas
@@ -160,44 +184,210 @@ const EraseToolComponent = ({
     }
   }, [handleMouseUp]);
 
-  // تابع ساده برای پاک کردن
+  // Helper function: calculate distance from point to line
+  const pointToLineDistance = useCallback((px, py, x1, y1, x2, y2) => {
+    const A = px - x1;
+    const B = py - y1;
+    const C = x2 - x1;
+    const D = y2 - y1;
+
+    const dot = A * C + B * D;
+    const lenSq = C * C + D * D;
+    let param = -1;
+
+    if (lenSq !== 0) {
+      param = dot / lenSq;
+    }
+
+    let xx, yy;
+
+    if (param < 0) {
+      xx = x1;
+      yy = y1;
+    } else if (param > 1) {
+      xx = x2;
+      yy = y2;
+    } else {
+      xx = x1 + param * C;
+      yy = y1 + param * D;
+    }
+
+    const dx = px - xx;
+    const dy = py - yy;
+
+    return Math.sqrt(dx * dx + dy * dy);
+  }, []);
+
+  // تابع ساده برای پاک کردن - با دقت بالا
   const performEraseAction = useCallback((point) => {
     if (!canvas) return;
 
+    console.log('\n🧹 ==================== PERFORM ERASE ACTION ====================');
+    console.log('🎯 Eraser position:', point);
+    console.log('📏 Eraser size:', settings.size);
+    console.log('🔍 Tolerance:', 8);
+
     const objects = canvas.getObjects();
     const objectsToRemove = [];
-    const radius = actualSize / 2;
+    const tolerance = 8;
 
-    objects.forEach(obj => {
+    console.log('📦 Total objects on canvas:', objects.length);
+
+    if (objects.length === 0) {
+      console.log('⚠️ No objects on canvas to erase!');
+      return;
+    }
+
+    objects.forEach((obj, idx) => {
       // Skip background and preview objects
-      if (obj === canvas.backgroundImage || obj._isPreview) return;
-      
-      // Check if object is within eraser range
-      const bounds = obj.getBoundingRect();
-      const centerX = bounds.left + bounds.width / 2;
-      const centerY = bounds.top + bounds.height / 2;
-      
-      const distance = Math.sqrt(
-        Math.pow(point.x - centerX, 2) + Math.pow(point.y - centerY, 2)
-      );
-      
-      const objRadius = Math.max(bounds.width, bounds.height) / 2;
-      
-      if (distance < (radius + objRadius)) {
+      if (obj === canvas.backgroundImage || obj._isPreview) {
+        console.log(`Object ${idx}: SKIPPED (background/preview)`);
+        return;
+      }
+
+      let shouldErase = false;
+
+      console.log(`\n--- Object ${idx} ---`);
+      console.log('Object type:', obj.type);
+      console.log('Object position - left:', obj.left, 'top:', obj.top);
+      console.log('Stroke width:', obj.strokeWidth);
+
+      // بررسی دقیق بر اساس نوع آبجکت
+      if (obj.type === 'line') {
+        // برای خطوط: بررسی فاصله نقطه تا خط
+        const x1 = obj.x1 + obj.left;
+        const y1 = obj.y1 + obj.top;
+        const x2 = obj.x2 + obj.left;
+        const y2 = obj.y2 + obj.top;
+
+        console.log('Line endpoints:', { x1, y1, x2, y2 });
+
+        const distance = pointToLineDistance(point.x, point.y, x1, y1, x2, y2);
+        const strokeWidth = obj.strokeWidth || 1;
+        const threshold = strokeWidth / 2 + tolerance;
+
+        console.log('Distance to line:', distance.toFixed(2), 'Threshold:', threshold.toFixed(2));
+
+        if (distance <= threshold) {
+          shouldErase = true;
+          console.log('✅ WILL ERASE - within threshold');
+        } else {
+          console.log('❌ NO ERASE - too far from line');
+        }
+      } else if (obj.type === 'path') {
+        // برای مسیرها (brush strokes): بررسی دقیق نقاط مسیر
+        console.log('🎨 PATH OBJECT FOUND');
+        console.log('   Path points count:', obj.path?.length || 0);
+        console.log('   Stroke color:', obj.stroke);
+        console.log('   Stroke width:', obj.strokeWidth);
+
+        if (obj.path && obj.path.length > 0) {
+          const strokeWidth = obj.strokeWidth || 1;
+          const threshold = strokeWidth / 2 + tolerance;
+
+          console.log('   🎯 Threshold for hit detection:', threshold.toFixed(2), 'px');
+          console.log('   📍 First 5 path points:', obj.path.slice(0, 5).map((p, i) => `[${i}]: [${p[1]?.toFixed(1)}, ${p[2]?.toFixed(1)}]`).join(', '));
+
+          let minDistance = Infinity;
+          let closestPoint = null;
+          let hitPoints = [];
+
+          // بررسی فاصله از هر نقطه در مسیر
+          for (let i = 0; i < obj.path.length; i++) {
+            const pathPoint = obj.path[i];
+            if (pathPoint.length >= 3) {
+              // Path coordinates are already in global space, no need to add obj.left/top
+              const px = pathPoint[1];
+              const py = pathPoint[2];
+
+              const distance = Math.sqrt(
+                Math.pow(point.x - px, 2) + Math.pow(point.y - py, 2)
+              );
+
+              if (distance < minDistance) {
+                minDistance = distance;
+                closestPoint = { px, py, index: i, distance: distance.toFixed(2) };
+              }
+
+              if (distance <= threshold) {
+                shouldErase = true;
+                hitPoints.push({ index: i, distance: distance.toFixed(2) });
+              }
+
+              // بررسی فاصله از خطوط بین نقاط
+              if (i > 0 && obj.path[i - 1].length >= 3) {
+                const prevPx = obj.path[i - 1][1];
+                const prevPy = obj.path[i - 1][2];
+
+                const lineDistance = pointToLineDistance(point.x, point.y, prevPx, prevPy, px, py);
+
+                if (lineDistance < minDistance) {
+                  minDistance = lineDistance;
+                  closestPoint = { px, py, index: i, distance: lineDistance.toFixed(2), type: 'line-segment' };
+                }
+
+                if (lineDistance <= threshold) {
+                  shouldErase = true;
+                  hitPoints.push({ index: `${i-1}-${i}`, distance: lineDistance.toFixed(2), type: 'line' });
+                }
+              }
+            }
+          }
+
+          if (!shouldErase) {
+            console.log(`   ❌ NO HIT - Closest distance: ${minDistance.toFixed(2)}px at`, closestPoint);
+          } else {
+            console.log(`   ✅ HIT DETECTED! - Hit ${hitPoints.length} points/segments:`, hitPoints);
+            console.log('   🔪 Instead of partial erase, removing entire object for now...');
+
+            // For now, just remove the entire object when hit
+            // TODO: Implement proper path splitting for partial erase
+            shouldErase = true;
+            console.log('   ⚠️ Marking object for complete removal');
+          }
+        }
+      } else {
+        // برای سایر اشیاء: استفاده از containsPoint
+        const bounds = obj.getBoundingRect();
+
+        if (point.x >= bounds.left - tolerance &&
+            point.x <= bounds.left + bounds.width + tolerance &&
+            point.y >= bounds.top - tolerance &&
+            point.y <= bounds.top + bounds.height + tolerance) {
+
+          if (obj.containsPoint) {
+            const objPoint = new fabric.Point(point.x, point.y);
+            shouldErase = obj.containsPoint(objPoint);
+          } else {
+            shouldErase = true;
+          }
+        }
+      }
+
+      if (shouldErase) {
+        console.log('⭐ Adding to removal list');
         objectsToRemove.push(obj);
       }
     });
 
-    // Remove objects
-    objectsToRemove.forEach(obj => {
-      canvas.remove(obj);
-    });
+    console.log('\n📊 ========== SUMMARY ==========');
+    console.log('Objects marked for complete removal:', objectsToRemove.length);
 
+    // Remove objects
     if (objectsToRemove.length > 0) {
-      canvas.renderAll();
-      console.log('🧹 Erased', objectsToRemove.length, 'objects');
+      objectsToRemove.forEach((obj, idx) => {
+        console.log(`   🗑️ Removing object ${idx}:`, obj.type);
+        canvas.remove(obj);
+      });
+      canvas.requestRenderAll();
+      console.log('✅ Successfully removed', objectsToRemove.length, 'objects');
+    } else {
+      console.log('ℹ️ No objects marked for complete removal');
     }
-  }, [canvas, actualSize]);
+
+    console.log('📦 Final canvas objects count:', canvas.getObjects().length);
+    console.log('======================================================\n');
+  }, [canvas, actualSize, pointToLineDistance, settings.size]);
 
 
   // بررسی قرار گیری object در محدوده پاک‌کن
@@ -316,7 +506,7 @@ const EraseToolComponent = ({
 
   // رندر پیش‌نمایش ساده
   const renderPreview = useCallback(() => {
-    if (!canvas || !previewPosition || isErasing) return;
+    if (!canvas || !previewPosition) return;
 
     const ctx = canvas.contextTop;
     if (!ctx) return;
@@ -324,7 +514,7 @@ const EraseToolComponent = ({
     ctx.save();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // رسم دایره قرمز ساده
+    // رسم دایره قرمز ساده - همیشه نمایش داده شود
     ctx.strokeStyle = '#ff0000';
     ctx.lineWidth = 2;
     ctx.setLineDash([5, 5]);
@@ -333,7 +523,7 @@ const EraseToolComponent = ({
     ctx.stroke();
 
     ctx.restore();
-  }, [canvas, previewPosition, actualSize, isErasing]);
+  }, [canvas, previewPosition, actualSize]);
 
   // تنظیم event listeners با useRef برای جلوگیری از recreate شدن
   const handlersRef = useRef({

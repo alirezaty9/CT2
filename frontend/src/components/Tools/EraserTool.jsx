@@ -20,34 +20,41 @@ const EraserTool = forwardRef(({ canvas, isActive }, ref) => {
       // Disable selection and drawing mode
       canvas.isDrawingMode = false;
       canvas.selection = false;
-      canvas.defaultCursor = 'crosshair';
-      canvas.hoverCursor = 'crosshair';
-      
+      canvas.defaultCursor = 'none'; // Hide default cursor
+      canvas.hoverCursor = 'none';
+
       // Mouse down - start erasing
       const handleMouseDown = (e) => {
         isErasingRef.current = true;
         const pointer = canvas.getPointer(e.e);
+        showPreview(pointer);
         eraseObjectsAtPoint(pointer);
       };
-      
+
       // Mouse move - show preview and continue erasing
       const handleMouseMove = (e) => {
         const pointer = canvas.getPointer(e.e);
-        
-        // Show preview circle
+
+        // Always show and update preview circle position
         showPreview(pointer);
-        
+
         // If erasing, erase objects
         if (isErasingRef.current) {
           eraseObjectsAtPoint(pointer);
         }
       };
-      
+
       // Mouse up - stop erasing
       const handleMouseUp = () => {
         isErasingRef.current = false;
       };
-      
+
+      // Mouse enter - show preview
+      const handleMouseEnter = (e) => {
+        const pointer = canvas.getPointer(e.e);
+        showPreview(pointer);
+      };
+
       // Mouse leave - stop erasing and hide preview
       const handleMouseLeave = () => {
         isErasingRef.current = false;
@@ -97,27 +104,36 @@ const EraserTool = forwardRef(({ canvas, isActive }, ref) => {
       
       // Show preview circle
       const showPreview = (point) => {
-        // Remove old preview
-        if (previewCircleRef.current) {
-          canvas.remove(previewCircleRef.current);
+        if (!previewCircleRef.current) {
+          // Create new preview only if it doesn't exist
+          previewCircleRef.current = new fabric.Circle({
+            left: point.x,
+            top: point.y,
+            radius: eraserSize / 2,
+            fill: 'transparent',
+            stroke: '#ff0000',
+            strokeWidth: 2,
+            strokeDashArray: [5, 5],
+            selectable: false,
+            evented: false,
+            excludeFromExport: true,
+            originX: 'center',
+            originY: 'center'
+          });
+          canvas.add(previewCircleRef.current);
+        } else {
+          // Update position of existing preview
+          previewCircleRef.current.set({
+            left: point.x,
+            top: point.y,
+            radius: eraserSize / 2
+          });
+          previewCircleRef.current.setCoords();
         }
-        
-        // Create new preview
-        previewCircleRef.current = new fabric.Circle({
-          left: point.x - eraserSize / 2,
-          top: point.y - eraserSize / 2,
-          radius: eraserSize / 2,
-          fill: 'transparent',
-          stroke: '#ff0000',
-          strokeWidth: 2,
-          strokeDashArray: [5, 5],
-          selectable: false,
-          evented: false,
-          excludeFromExport: true
-        });
-        
-        canvas.add(previewCircleRef.current);
-        canvas.renderAll();
+
+        // Bring preview to front and render
+        canvas.bringToFront(previewCircleRef.current);
+        canvas.requestRenderAll();
       };
       
       // Hide preview circle
@@ -133,14 +149,16 @@ const EraserTool = forwardRef(({ canvas, isActive }, ref) => {
       canvas.on('mouse:down', handleMouseDown);
       canvas.on('mouse:move', handleMouseMove);
       canvas.on('mouse:up', handleMouseUp);
+      canvas.on('mouse:over', handleMouseEnter);
       canvas.on('mouse:leave', handleMouseLeave);
-      
+
       console.log('🧹 Eraser tool activated');
-      
+
       return () => {
         canvas.off('mouse:down', handleMouseDown);
         canvas.off('mouse:move', handleMouseMove);
         canvas.off('mouse:up', handleMouseUp);
+        canvas.off('mouse:over', handleMouseEnter);
         canvas.off('mouse:leave', handleMouseLeave);
         hidePreview();
       };
