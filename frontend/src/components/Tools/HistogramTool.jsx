@@ -9,6 +9,7 @@ const HistogramTool = ({ canvas, isActive }) => {
   const [isSelecting, setIsSelecting] = useState(false);
   const [startPoint, setStartPoint] = useState(null);
   const selectionObjectRef = useRef(null);
+  const overlaysRef = useRef([]);
   const { updateHistogram } = useHistogram();
 
   // Calculate histogram from image data
@@ -83,11 +84,125 @@ const HistogramTool = ({ canvas, isActive }) => {
     };
   }, []);
 
-  // Remove selection object
+  // Create overlays for dark area outside selection
+  const createOverlays = useCallback((selectionObj) => {
+    if (!canvas) return;
+
+    const bounds = { left: 0, top: 0, width: canvas.width, height: canvas.height };
+    let overlays = [];
+
+    if (selectionObj.type === 'circle') {
+      // For circle/point selection, create a dark overlay with a transparent circle
+      const fullOverlay = new fabric.Rect({
+        left: bounds.left,
+        top: bounds.top,
+        width: bounds.width,
+        height: bounds.height,
+        fill: 'rgba(0,0,0,0.5)',
+        selectable: false,
+        evented: false,
+        excludeFromExport: true
+      });
+
+      const clearCircle = new fabric.Circle({
+        left: selectionObj.left,
+        top: selectionObj.top,
+        radius: selectionObj.radius,
+        fill: 'transparent',
+        stroke: 'transparent',
+        originX: 'center',
+        originY: 'center',
+        selectable: false,
+        evented: false,
+        excludeFromExport: true,
+        globalCompositeOperation: 'destination-out'
+      });
+
+      overlays = [fullOverlay, clearCircle];
+    } else if (selectionObj.type === 'rect') {
+      // For rectangular selection
+      const actualWidth = selectionObj.width * (selectionObj.scaleX || 1);
+      const actualHeight = selectionObj.height * (selectionObj.scaleY || 1);
+
+      overlays = [
+        // Top
+        new fabric.Rect({
+          left: bounds.left,
+          top: bounds.top,
+          width: bounds.width,
+          height: Math.max(0, selectionObj.top - bounds.top),
+          fill: 'rgba(0,0,0,0.5)',
+          selectable: false,
+          evented: false,
+          excludeFromExport: true
+        }),
+        // Bottom
+        new fabric.Rect({
+          left: bounds.left,
+          top: selectionObj.top + actualHeight,
+          width: bounds.width,
+          height: Math.max(0, bounds.height - (selectionObj.top + actualHeight)),
+          fill: 'rgba(0,0,0,0.5)',
+          selectable: false,
+          evented: false,
+          excludeFromExport: true
+        }),
+        // Left
+        new fabric.Rect({
+          left: bounds.left,
+          top: selectionObj.top,
+          width: Math.max(0, selectionObj.left - bounds.left),
+          height: actualHeight,
+          fill: 'rgba(0,0,0,0.5)',
+          selectable: false,
+          evented: false,
+          excludeFromExport: true
+        }),
+        // Right
+        new fabric.Rect({
+          left: selectionObj.left + actualWidth,
+          top: selectionObj.top,
+          width: Math.max(0, bounds.width - (selectionObj.left + actualWidth)),
+          height: actualHeight,
+          fill: 'rgba(0,0,0,0.5)',
+          selectable: false,
+          evented: false,
+          excludeFromExport: true
+        })
+      ];
+    } else if (selectionObj.type === 'line') {
+      // For line selection, just use a full dark overlay (line is thin)
+      overlays = [
+        new fabric.Rect({
+          left: bounds.left,
+          top: bounds.top,
+          width: bounds.width,
+          height: bounds.height,
+          fill: 'rgba(0,0,0,0.5)',
+          selectable: false,
+          evented: false,
+          excludeFromExport: true
+        })
+      ];
+    }
+
+    overlays.forEach(overlay => canvas.add(overlay));
+    overlaysRef.current = overlays;
+  }, [canvas]);
+
+  // Remove selection object and overlays
   const removeSelectionObject = useCallback(() => {
-    if (selectionObjectRef.current && canvas) {
-      canvas.remove(selectionObjectRef.current);
-      selectionObjectRef.current = null;
+    if (canvas) {
+      // Remove overlays
+      overlaysRef.current.forEach(overlay => canvas.remove(overlay));
+      overlaysRef.current = [];
+
+      // Remove selection object
+      if (selectionObjectRef.current) {
+        canvas.remove(selectionObjectRef.current);
+        selectionObjectRef.current = null;
+      }
+
       canvas.renderAll();
     }
   }, [canvas]);
@@ -138,15 +253,16 @@ const HistogramTool = ({ canvas, isActive }) => {
       const region = { type: 'point', x, y, radius, fabricObject: circle };
       updateHistogram(histogram, { x, y, pixel: pixelData, mode: 'point' }, region);
 
-      // Add circle to canvas
+      // Add circle and overlays to canvas
       removeSelectionObject();
       selectionObjectRef.current = circle;
       canvas.add(circle);
+      createOverlays(circle);
       canvas.renderAll();
     } catch (err) {
       console.error('❌ Error calculating histogram:', err);
     }
-  }, [canvas, getPixelData, calculateHistogramFromData, updateHistogram, removeSelectionObject]);
+  }, [canvas, getPixelData, calculateHistogramFromData, updateHistogram, removeSelectionObject, createOverlays]);
 
   // Area selection
   const handleAreaSelection = useCallback((x1, y1, x2, y2) => {
@@ -195,14 +311,16 @@ const HistogramTool = ({ canvas, isActive }) => {
         height
       }, region);
 
-      // Keep rect visible - don't remove it
+      // Keep rect visible with overlays
+      removeSelectionObject();
       selectionObjectRef.current = rect;
       canvas.add(rect);
+      createOverlays(rect);
       canvas.renderAll();
     } catch (err) {
       console.error('❌ Error calculating histogram:', err);
     }
-  }, [canvas, calculateHistogramFromData, calculateAveragePixel, updateHistogram]);
+  }, [canvas, calculateHistogramFromData, calculateAveragePixel, updateHistogram, removeSelectionObject, createOverlays]);
 
   // Line selection
   const handleLineSelection = useCallback((x1, y1, x2, y2) => {
@@ -267,14 +385,16 @@ const HistogramTool = ({ canvas, isActive }) => {
         length
       }, region);
 
-      // Keep line visible - don't remove it
+      // Keep line visible with overlays
+      removeSelectionObject();
       selectionObjectRef.current = line;
       canvas.add(line);
+      createOverlays(line);
       canvas.renderAll();
     } catch (err) {
       console.error('❌ Error calculating histogram:', err);
     }
-  }, [canvas, calculateHistogramFromData, calculateAveragePixel, updateHistogram]);
+  }, [canvas, calculateHistogramFromData, calculateAveragePixel, updateHistogram, removeSelectionObject, createOverlays]);
 
   // Mouse down handler
   const handleMouseDown = useCallback((e) => {
