@@ -17,6 +17,8 @@ import { useTranslation } from "react-i18next";
 import BaslerDisplay from "./Camera/BaslerDisplay";
 import MonitoringDisplay from "./Camera/MonitoringDisplay";
 import HistogramDisplay from "./HistogramDisplay";
+import IntensityProfileDisplay from "./IntensityProfileDisplay";
+import { LayerManager } from "./Layers";
 
 // تب‌های بالا
 const tabs = [
@@ -82,6 +84,7 @@ const Layout = () => {
     : null;
 
   const [activeButton, setActiveButton] = useState(defaultActive);
+  const [analysisView, setAnalysisView] = useState('histogram'); // 'histogram' or 'intensity'
   const { t, i18n } = useTranslation();
 
   const handleButtonClick = useCallback((name) => {
@@ -142,6 +145,7 @@ const Layout = () => {
             <div className="flex-1 min-h-0">
               <BaslerDisplay />
             </div>
+            <LayerManager className="flex-shrink-0" />
           </div>
           {/* Image Reel - ارتفاع ثابت */}
           <div className="card flex-shrink-0 rounded-t-none border-t-0 text-text dark:text-text font-medium text-center p-4">
@@ -149,9 +153,36 @@ const Layout = () => {
           </div>
         </div>
 
-        {/* هیستوگرام - ارتفاع ثابت */}
+        {/* Analysis Panel - ارتفاع ثابت */}
         <div className="card flex-shrink-0 h-40 md:h-44 p-4">
-          <HistogramDisplay />
+          {/* Tab Switcher */}
+          <div className="flex gap-2 mb-2">
+            <button
+              onClick={() => setAnalysisView('histogram')}
+              className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+                analysisView === 'histogram'
+                  ? 'bg-gradient-to-r from-primary to-primary-dark text-white shadow-md'
+                  : 'bg-background-secondary dark:bg-background-primary text-text hover:bg-accent border border-border'
+              }`}
+            >
+              Histogram
+            </button>
+            <button
+              onClick={() => setAnalysisView('intensity')}
+              className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+                analysisView === 'intensity'
+                  ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md'
+                  : 'bg-background-secondary dark:bg-background-primary text-text hover:bg-accent border border-border'
+              }`}
+            >
+              Intensity Profile
+            </button>
+          </div>
+
+          {/* Display Content */}
+          <div className="h-[calc(100%-2.5rem)]">
+            {analysisView === 'histogram' ? <HistogramDisplay /> : <IntensityProfileDisplay />}
+          </div>
         </div>
       </div>
     </div>

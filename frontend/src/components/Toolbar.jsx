@@ -27,6 +27,7 @@ import {
   Download,
   X,
   BarChart3,
+  Activity,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ToolManager } from "./Tools";
@@ -34,6 +35,7 @@ import { BrushTool, LineTool, MoveTool, CropTool } from "./Tools";
 import ZoomTool from "./Tools/ZoomTool.jsx";
 import EraseToolComponent from "./Tools/EraseToolComponent";
 import HistogramTool from "./Tools/HistogramTool.jsx";
+import IntensityProfileTool from "./Tools/IntensityProfileTool.jsx";
 
 // CSS for hiding scrollbar
 const scrollbarHideStyle = `
@@ -73,6 +75,7 @@ const tools = [
   { Icon: Move, name: "move", hotkey: "v", category: "nav" },
   { Icon: ZoomIn, name: "zoom", hotkey: "z", category: "view" },
   { Icon: BarChart3, name: "histogram", hotkey: "h", category: "analyze" },
+  { Icon: Activity, name: "intensity", hotkey: "i", category: "analyze" },
   { Icon: Palette, name: "grayscale", hotkey: "g", category: "filter" },
   { Icon: Hand, name: "pan", hotkey: "space", category: "nav" },
   { Icon: RotateCcw, name: "undo", hotkey: "ctrl+z", category: "edit" },
@@ -183,13 +186,21 @@ const Toolbar = ({ className = "" }) => {
     ]
   );
 
-  // Setup hotkeys for all tools
-  tools.forEach((tool) => {
-    useHotkeys(tool.hotkey, () => handleToolClick(tool.name), {
-      preventDefault: true,
-      description: `${t(tool.name)} (${tool.hotkey})`,
-    });
-  });
+  // Setup hotkeys for all tools - using individual hooks (not in a loop)
+  useHotkeys("c", () => handleToolClick("crop"), { preventDefault: true });
+  useHotkeys("b", () => handleToolClick("brush"), { preventDefault: true });
+  useHotkeys("e", () => handleToolClick("eraser"), { preventDefault: true });
+  useHotkeys("o", () => handleToolClick("circle"), { preventDefault: true });
+  useHotkeys("r", () => handleToolClick("rectangle"), { preventDefault: true });
+  useHotkeys("l", () => handleToolClick("line"), { preventDefault: true });
+  useHotkeys("shift+l", () => handleToolClick("lineChart"), { preventDefault: true });
+  useHotkeys("v", () => handleToolClick("move"), { preventDefault: true });
+  useHotkeys("z", () => handleToolClick("zoom"), { preventDefault: true });
+  useHotkeys("h", () => handleToolClick("histogram"), { preventDefault: true });
+  useHotkeys("i", () => handleToolClick("intensity"), { preventDefault: true });
+  useHotkeys("g", () => handleToolClick("grayscale"), { preventDefault: true });
+  useHotkeys("space", () => handleToolClick("pan"), { preventDefault: true });
+  useHotkeys("ctrl+z", () => handleToolClick("undo"), { preventDefault: true });
 
   // Additional hotkeys
   useHotkeys("ctrl+s", handleSave, { preventDefault: true });
@@ -623,6 +634,13 @@ const Toolbar = ({ className = "" }) => {
       {canvas && (
         <div className={`absolute left-full top-0 ml-2 z-50 ${activeTool === "histogram" ? "" : "hidden"}`}>
           <HistogramTool canvas={canvas} isActive={activeTool === "histogram"} />
+        </div>
+      )}
+
+      {/* Intensity Profile Tool - Always mounted but conditionally visible */}
+      {canvas && (
+        <div className={`absolute left-full top-0 ml-2 z-50 ${activeTool === "intensity" ? "" : "hidden"}`}>
+          <IntensityProfileTool canvas={canvas} isActive={activeTool === "intensity"} />
         </div>
       )}
     </motion.div>

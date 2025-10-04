@@ -1,8 +1,12 @@
 import React, { useRef, useCallback } from 'react';
 import { fabric } from 'fabric';
+import { useToolLayer } from '../../hooks/useToolLayer';
 
 const BrushTool = ({ canvas, isActive, brushColor = '#ff0000', brushWidth = 5 }) => {
   const brushRef = useRef(null);
+
+  // Use layer system
+  const { addToLayer, getCurrentLayer } = useToolLayer('Brush', 'brush', canvas, isActive);
 
   // Initialize brush
   React.useEffect(() => {
@@ -11,19 +15,33 @@ const BrushTool = ({ canvas, isActive, brushColor = '#ff0000', brushWidth = 5 })
       brushRef.current = new fabric.PencilBrush(canvas);
       brushRef.current.width = brushWidth;
       brushRef.current.color = brushColor;
-      
+
       // Set up drawing mode
       canvas.isDrawingMode = true;
       canvas.freeDrawingBrush = brushRef.current;
-      
+
       // Reset composite operation
       if (canvas.contextTop) {
         canvas.contextTop.globalCompositeOperation = 'source-over';
       }
-      
-      console.log('🖌️ Brush tool activated');
+
+      // Listen for path created events to add to layer
+      const handlePathCreated = (e) => {
+        if (e.path) {
+          addToLayer(e.path);
+          console.log('🖌️ Brush stroke added to layer:', getCurrentLayer()?.name);
+        }
+      };
+
+      canvas.on('path:created', handlePathCreated);
+
+      console.log('🖌️ Brush tool activated with layer:', getCurrentLayer()?.name);
+
+      return () => {
+        canvas.off('path:created', handlePathCreated);
+      };
     }
-  }, [canvas, isActive, brushColor, brushWidth]);
+  }, [canvas, isActive, brushColor, brushWidth, addToLayer, getCurrentLayer]);
 
   // Cleanup when tool becomes inactive
   React.useEffect(() => {

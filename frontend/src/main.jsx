@@ -11,6 +11,8 @@ import { WebSocketProvider } from "./contexts/WebSocketContext";
 import { FormDataProvider } from "./contexts/FormDataContext";
 import { CameraProvider } from "./contexts/CameraContext";
 import { HistogramProvider } from "./contexts/HistogramContext";
+import { LayerProvider } from "./contexts/LayerContext";
+import { IntensityProfileProvider } from "./contexts/IntensityProfileContext";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -21,7 +23,11 @@ ReactDOM.createRoot(document.getElementById("root")).render(
             <FormDataProvider>
               <CameraProvider>
                 <HistogramProvider>
-                  <App />
+                  <IntensityProfileProvider>
+                    <LayerProvider>
+                      <App />
+                    </LayerProvider>
+                  </IntensityProfileProvider>
                 </HistogramProvider>
               </CameraProvider>
             </FormDataProvider>

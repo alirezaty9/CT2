@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { BarChart3, Crosshair, Info, Square, Minus } from 'lucide-react';
 import { useHistogram } from '../../contexts/HistogramContext';
 import { fabric } from 'fabric';
+import { useToolLayer } from '../../hooks/useToolLayer';
 
 const HistogramTool = ({ canvas, isActive }) => {
   const [selectionMode, setSelectionMode] = useState('point'); // 'point', 'area', 'line'
@@ -11,6 +12,14 @@ const HistogramTool = ({ canvas, isActive }) => {
   const selectionObjectRef = useRef(null);
   const overlaysRef = useRef([]);
   const { updateHistogram } = useHistogram();
+
+  // Use layer system
+  const { addToLayer, removeFromLayer, getCurrentLayer } = useToolLayer(
+    'Histogram Selection',
+    'histogram',
+    canvas,
+    isActive
+  );
 
   // Calculate histogram from image data
   const calculateHistogramFromData = useCallback((data) => {
@@ -192,20 +201,33 @@ const HistogramTool = ({ canvas, isActive }) => {
 
   // Remove selection object and overlays
   const removeSelectionObject = useCallback(() => {
-    if (canvas) {
+    if (!canvas) return;
+
+    try {
       // Remove overlays
-      overlaysRef.current.forEach(overlay => canvas.remove(overlay));
+      overlaysRef.current.forEach(overlay => {
+        if (overlay) {
+          canvas.remove(overlay);
+          removeFromLayer(overlay);
+        }
+      });
       overlaysRef.current = [];
 
       // Remove selection object
       if (selectionObjectRef.current) {
         canvas.remove(selectionObjectRef.current);
+        removeFromLayer(selectionObjectRef.current);
         selectionObjectRef.current = null;
       }
 
-      canvas.renderAll();
+      // Only render if canvas is properly initialized
+      if (canvas.getContext && canvas.getContext('2d')) {
+        canvas.renderAll();
+      }
+    } catch (error) {
+      console.warn('Error removing selection objects:', error);
     }
-  }, [canvas]);
+  }, [canvas, removeFromLayer]);
 
   // Point selection
   const handlePointSelection = useCallback((pointer) => {
@@ -257,12 +279,15 @@ const HistogramTool = ({ canvas, isActive }) => {
       removeSelectionObject();
       selectionObjectRef.current = circle;
       canvas.add(circle);
+      addToLayer(circle);
       createOverlays(circle);
+      // Add overlays to layer as well
+      overlaysRef.current.forEach(overlay => addToLayer(overlay));
       canvas.renderAll();
     } catch (err) {
       console.error('❌ Error calculating histogram:', err);
     }
-  }, [canvas, getPixelData, calculateHistogramFromData, updateHistogram, removeSelectionObject, createOverlays]);
+  }, [canvas, getPixelData, calculateHistogramFromData, updateHistogram, removeSelectionObject, createOverlays, addToLayer]);
 
   // Area selection
   const handleAreaSelection = useCallback((x1, y1, x2, y2) => {
@@ -315,12 +340,15 @@ const HistogramTool = ({ canvas, isActive }) => {
       removeSelectionObject();
       selectionObjectRef.current = rect;
       canvas.add(rect);
+      addToLayer(rect);
       createOverlays(rect);
+      // Add overlays to layer as well
+      overlaysRef.current.forEach(overlay => addToLayer(overlay));
       canvas.renderAll();
     } catch (err) {
       console.error('❌ Error calculating histogram:', err);
     }
-  }, [canvas, calculateHistogramFromData, calculateAveragePixel, updateHistogram, removeSelectionObject, createOverlays]);
+  }, [canvas, calculateHistogramFromData, calculateAveragePixel, updateHistogram, removeSelectionObject, createOverlays, addToLayer]);
 
   // Line selection
   const handleLineSelection = useCallback((x1, y1, x2, y2) => {
@@ -389,12 +417,15 @@ const HistogramTool = ({ canvas, isActive }) => {
       removeSelectionObject();
       selectionObjectRef.current = line;
       canvas.add(line);
+      addToLayer(line);
       createOverlays(line);
+      // Add overlays to layer as well
+      overlaysRef.current.forEach(overlay => addToLayer(overlay));
       canvas.renderAll();
     } catch (err) {
       console.error('❌ Error calculating histogram:', err);
     }
-  }, [canvas, calculateHistogramFromData, calculateAveragePixel, updateHistogram, removeSelectionObject, createOverlays]);
+  }, [canvas, calculateHistogramFromData, calculateAveragePixel, updateHistogram, removeSelectionObject, createOverlays, addToLayer]);
 
   // Mouse down handler
   const handleMouseDown = useCallback((e) => {
@@ -492,14 +523,12 @@ const HistogramTool = ({ canvas, isActive }) => {
 
   // Cleanup when tool becomes inactive
   useEffect(() => {
-    if (!isActive) {
+    if (!isActive && canvas) {
       setIsSelecting(false);
       setStartPoint(null);
       removeSelectionObject();
-      if (canvas) {
-        canvas.defaultCursor = 'default';
-        canvas.hoverCursor = 'move';
-      }
+      canvas.defaultCursor = 'default';
+      canvas.hoverCursor = 'move';
     }
   }, [isActive, canvas, removeSelectionObject]);
 
