@@ -15,7 +15,8 @@ const FormButton = ({
   const { i18n } = useTranslation();
   const isRtl = i18n.language === 'fa';
 
-  const baseClasses = 'font-vazir transition-all duration-200 rounded-lg font-medium';
+  const baseClasses = 'font-vazir rounded-xl font-medium shadow-sm hover:shadow-md';
+  const transitionClasses = 'transition-all duration-300 ease-out';
   
   const sizeClasses = {
     sm: 'px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm',
@@ -32,6 +33,7 @@ const FormButton = ({
 
   const buttonClass = `
     ${baseClasses}
+    ${transitionClasses}
     ${sizeClasses[size]}
     ${variantClasses[variant]}
     ${disabled ? 'opacity-50 cursor-not-allowed' : ''}

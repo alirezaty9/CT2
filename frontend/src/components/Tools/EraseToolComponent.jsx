@@ -1,23 +1,15 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence, useMotionValue, useSpring } from 'framer-motion';
 import { fabric } from 'fabric';
-import { 
-  Eraser, 
-  Settings, 
-  RotateCcw, 
-  Trash2, 
-  Eye, 
-  EyeOff,
+import {
+  Eraser,
+  Settings,
+  Trash2,
   Circle,
   Square,
   Minus,
-  Zap,
-  Target,
-  MousePointer,
-  Layers,
-  History,
-  Sparkles,
-  X
+  X,
+  Info
 } from 'lucide-react';
 import PropTypes from 'prop-types';
 
@@ -60,6 +52,7 @@ const EraseToolComponent = ({
 
   // State مدیریت UI
   const [showSettings, setShowSettings] = useState(false);
+  const [showPanel, setShowPanel] = useState(false);
   const [isErasing, setIsErasing] = useState(false);
   const [previewPosition, setPreviewPosition] = useState(null);
   const [erasedObjects, setErasedObjects] = useState([]);
@@ -618,238 +611,153 @@ const EraseToolComponent = ({
   }, [showSettings]);
 
   return (
-    <motion.div 
+    <motion.div
       ref={settingsRef}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
-      className="eraser-tool bg-white rounded-lg shadow-lg border border-gray-200 p-4 max-w-sm"
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      className="w-72 sm:w-80 bg-background-white dark:bg-background-secondary rounded-2xl shadow-2xl border border-border p-4 sm:p-6"
     >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Eraser className="w-5 h-5 text-red-500" />
-          <h3 className="font-semibold text-gray-800">ابزار پاک‌کن</h3>
+      {!showPanel ? (
+        // Minimal view
+        <div className="space-y-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-red-500 to-red-600 text-white shadow-md">
+                <Eraser size={16} className="sm:w-5 sm:h-5" />
+              </div>
+              <span className="text-sm sm:text-base font-semibold text-text">Eraser Tool</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <motion.button
+                onClick={() => setShowPanel(true)}
+                className="p-1.5 sm:p-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 shadow-md hover:shadow-lg shadow-red-500/30"
+                style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                whileHover={{ scale: 1.1, y: -2 }}
+                whileTap={{ scale: 0.93 }}
+                title="Settings"
+              >
+                <Settings size={14} className="sm:w-4 sm:h-4" />
+              </motion.button>
+              <motion.button
+                onClick={onClose}
+                className="p-1.5 sm:p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 shadow-sm hover:shadow-md"
+                style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                whileHover={{ scale: 1.1, y: -2 }}
+                whileTap={{ scale: 0.93 }}
+                title="Close Tool"
+              >
+                <X size={14} className="sm:w-4 sm:h-4" />
+              </motion.button>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-1">
-          {/* Close Button */}
-          {onClose && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onClose();
-              }}
-              className="p-2 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
-              title="بستن پنل"
+      ) : (
+        // Full settings panel
+        <div className="space-y-5">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-red-500 to-red-600 text-white shadow-md">
+                <Eraser size={20} />
+              </div>
+              <span className="text-base font-semibold text-text">Eraser Tool</span>
+            </div>
+            <motion.button
+              onClick={() => setShowPanel(false)}
+              className="p-1.5 sm:p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 shadow-sm hover:shadow-md"
+              style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+              whileHover={{ scale: 1.1, y: -2 }}
+              whileTap={{ scale: 0.93 }}
+              title="Collapse"
             >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-          {/* Settings Button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              // Single click no longer opens the settings menu
-            }}
-            onDoubleClick={(e) => {
-              e.stopPropagation();
-              setShowSettings(!showSettings);
-            }}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setShowSettings(!showSettings);
-            }}
-            className={`p-2 hover:bg-gray-100 rounded-lg transition-colors ${
-              showSettings ? 'bg-gray-100' : ''
-            }`}
-            title="دابل کلیک/راست کلیک: تنظیمات پیشرفته"
-          >
-            <Settings className="w-4 h-4 text-gray-600" />
-          </button>
-        </div>
-      </div>
+              <X size={14} className="sm:w-4 sm:h-4" />
+            </motion.button>
+          </div>
 
-      {/* اندازه پاک‌کن */}
-      <div className="mb-4">
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-sm font-medium text-gray-700">اندازه</label>
-          <span className="text-xs text-gray-500">{actualSize}px</span>
-        </div>
-        <input
-          type="range"
-          min={settings.minSize}
-          max={settings.maxSize}
-          value={settings.size}
-          onChange={(e) => updateSettings({ size: parseInt(e.target.value) })}
-          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-        />
-        <div className="flex justify-between text-xs text-gray-400 mt-1">
-          <span>{settings.minSize}px</span>
-          <span>{settings.maxSize}px</span>
-        </div>
-      </div>
+          {/* Eraser Size */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-semibold text-text">Size</label>
+              <span className="text-xs text-text-muted">{actualSize}px</span>
+            </div>
+            <input
+              type="range"
+              min={settings.minSize}
+              max={settings.maxSize}
+              value={settings.size}
+              onChange={(e) => updateSettings({ size: parseInt(e.target.value) })}
+              className="w-full h-2 bg-accent rounded-lg appearance-none cursor-pointer slider"
+            />
+            <div className="flex justify-between text-xs text-text-muted mt-1">
+              <span>{settings.minSize}px</span>
+              <span>{settings.maxSize}px</span>
+            </div>
+          </div>
 
-      {/* نوع پاک‌کن */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">شکل</label>
-        <div className="flex gap-2">
-          {[
-            { value: 'circle', icon: Circle, label: 'دایره' },
-            { value: 'square', icon: Square, label: 'مربع' },
-            { value: 'line', icon: Minus, label: 'خط' }
-          ].map(({ value, icon: Icon, label }) => (
-            <button
-              key={value}
-              onClick={() => updateSettings({ shape: value })}
-              className={`flex-1 flex items-center justify-center gap-1 py-2 px-3 rounded-lg text-sm transition-colors ${
-                settings.shape === value
-                  ? 'bg-red-100 text-red-700 border-red-200'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          {/* Shape Selection */}
+          <div>
+            <div className="text-sm font-semibold text-text mb-2">Shape</div>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { value: 'circle', label: 'Circle', icon: Circle },
+                { value: 'square', label: 'Square', icon: Square },
+                { value: 'line', label: 'Line', icon: Minus }
+              ].map(({ value, label, icon: Icon }) => (
+                <motion.button
+                  key={value}
+                  onClick={() => updateSettings({ shape: value })}
+                  className={`flex flex-col items-center gap-1 p-3 rounded-xl ${
+                    settings.shape === value
+                      ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30'
+                      : 'bg-background-secondary dark:bg-background-primary text-text hover:bg-accent border border-border'
+                  }`}
+                  style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                >
+                  <Icon size={18} />
+                  <span className="text-xs font-semibold">{label}</span>
+                </motion.button>
+              ))}
+            </div>
+          </div>
+
+          {/* Size Preview */}
+          <div className="flex items-center justify-center bg-accent dark:bg-background-primary rounded-xl border border-border p-4">
+            <div
+              className={`border-2 border-dashed border-red-400 bg-red-100 ${
+                settings.shape === 'square' ? '' : 'rounded-full'
               }`}
-            >
-              <Icon className="w-4 h-4" />
-              <span className="hidden sm:inline">{label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
+              style={{
+                width: `${Math.min(actualSize, 60)}px`,
+                height: settings.shape === 'line' ? '4px' : `${Math.min(actualSize, 60)}px`,
+              }}
+            />
+          </div>
 
-      {/* پیش‌نمایش اندازه */}
-      <div className="mb-4 flex items-center justify-center bg-gray-50 rounded-lg p-4">
-        <div 
-          className={`border-2 border-dashed border-red-400 bg-red-100 ${
-            settings.shape === 'square' ? '' : 'rounded-full'
-          }`}
-          style={{ 
-            width: `${Math.min(actualSize, 60)}px`, 
-            height: settings.shape === 'line' ? '4px' : `${Math.min(actualSize, 60)}px`,
-          }}
-        />
-      </div>
-
-      {/* تنظیمات پیشرفته */}
-      <AnimatePresence>
-        {showSettings && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="space-y-3 mb-4 p-3 bg-gray-50 rounded-lg"
+          {/* Action Buttons */}
+          <motion.button
+            onClick={handleClearAll}
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 shadow-md hover:shadow-lg shadow-red-500/30 font-semibold"
+            style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.97 }}
           >
-            {/* شفافیت */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-sm text-gray-600">شفافیت</label>
-                <span className="text-xs text-gray-500">{Math.round(settings.opacity * 100)}%</span>
-              </div>
-              <input
-                type="range"
-                min="0.1"
-                max="1"
-                step="0.1"
-                value={settings.opacity}
-                onChange={(e) => updateSettings({ opacity: parseFloat(e.target.value) })}
-                className="w-full h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer"
-              />
-            </div>
+            <Trash2 size={18} />
+            <span>Clear All</span>
+          </motion.button>
 
-            {/* Smoothing */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-sm text-gray-600">نرمی</label>
-                <span className="text-xs text-gray-500">{Math.round(settings.smoothing * 100)}%</span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.1"
-                value={settings.smoothing}
-                onChange={(e) => updateSettings({ smoothing: parseFloat(e.target.value) })}
-                className="w-full h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer"
-              />
-            </div>
-
-            {/* تنظیمات boolean */}
-            <div className="flex items-center justify-between">
-              <label className="text-sm text-gray-600">پیش‌نمایش</label>
-              <button
-                onClick={() => updateSettings({ preview: !settings.preview })}
-                className="p-1"
-              >
-                {settings.preview ? 
-                  <Eye className="w-4 h-4 text-blue-500" /> : 
-                  <EyeOff className="w-4 h-4 text-gray-400" />
-                }
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <label className="text-sm text-gray-600">حساسیت به فشار</label>
-              <button
-                onClick={() => updateSettings({ pressure: !settings.pressure })}
-                className={`w-10 h-5 rounded-full transition-colors ${
-                  settings.pressure ? 'bg-blue-500' : 'bg-gray-300'
-                }`}
-              >
-                <div className={`w-4 h-4 bg-white rounded-full transition-transform ${
-                  settings.pressure ? 'translate-x-5' : 'translate-x-0.5'
-                } translate-y-0.5`} />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* دکمه‌های عملیاتی */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => {
-            if (canvas) {
-              // Add test objects
-              const line = new fabric.Line([50, 50, 150, 150], {
-                stroke: '#ff0000',
-                strokeWidth: 3,
-                selectable: true,
-                evented: true
-              });
-              const rect = new fabric.Rect({
-                left: 200,
-                top: 100,
-                width: 100,
-                height: 80,
-                fill: 'transparent',
-                stroke: '#00ff00',
-                strokeWidth: 2,
-                selectable: true,
-                evented: true
-              });
-              canvas.add(line);
-              canvas.add(rect);
-              canvas.renderAll();
-              console.log('📏 Test objects added');
-            }
-          }}
-          className="flex-1 flex items-center justify-center gap-2 py-2 px-3 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
-        >
-          <Circle className="w-4 h-4" />
-          <span className="text-sm">Add Test</span>
-        </button>
-        
-        <button
-          onClick={handleClearAll}
-          className="flex-1 flex items-center justify-center gap-2 py-2 px-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
-        >
-          <Trash2 className="w-4 h-4" />
-          <span className="text-sm">Clear All</span>
-        </button>
-      </div>
-
-      {/* نمایش آمار */}
-      {erasedObjects.length > 0 && (
-        <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
-          {erasedObjects.length} آبجکت پاک شده
+          {/* Stats */}
+          {erasedObjects.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-xl text-sm text-orange-800 dark:text-orange-300"
+            >
+              {erasedObjects.length} objects erased
+            </motion.div>
+          )}
         </div>
       )}
     </motion.div>

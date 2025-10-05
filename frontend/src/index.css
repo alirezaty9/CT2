@@ -10,7 +10,7 @@
 body {
   font-family: 'Inter', sans-serif; /* فونت پیش‌فرض برای انگلیسی */
   overflow-y: scroll;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .font-vazir {
@@ -42,13 +42,14 @@ body {
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid #ffffff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .slider::-webkit-slider-thumb:hover {
   background: #dc2626;
-  transform: scale(1.1);
-  transition: all 0.2s ease;
+  transform: scale(1.15);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4), 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 .slider::-moz-range-track {
@@ -65,13 +66,14 @@ body {
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid #ffffff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .slider::-moz-range-thumb:hover {
   background: #dc2626;
-  transform: scale(1.1);
-  transition: all 0.2s ease;
+  transform: scale(1.15);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4), 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 /* 🎨 متغیرهای تم روشن (بدون تغییر) */
 :root {
@@ -110,35 +112,49 @@ body {
 
 @layer components {
   .variant-default {
-    @apply text-text-muted hover:text-primary hover:bg-background-secondary transition-all duration-300;
+    @apply text-text-muted hover:text-primary hover:bg-background-secondary;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .variant-primary {
-    @apply text-primary hover:text-primary-dark transition-all duration-300;
+    @apply text-primary hover:text-primary-dark;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .variant-highlight {
-    @apply text-white bg-highlight hover:bg-highlight-dark transition-all duration-300;
+    @apply text-white bg-highlight hover:bg-highlight-dark;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+  }
+
+  .variant-highlight:hover {
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.35);
   }
 
   .tab-active {
-    @apply text-primary border-primary bg-background-white rounded-t-md;
+    @apply text-primary border-primary bg-background-white rounded-t-xl;
+    box-shadow: 0 -2px 8px rgba(59, 130, 246, 0.1);
   }
 
   .tab-inactive {
-    @apply text-text-muted border-transparent hover:text-primary hover:border-border transition-all duration-300;
+    @apply text-text-muted border-transparent hover:text-primary hover:border-border rounded-t-xl;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .card {
-    @apply bg-background-white rounded-xl shadow-lg border border-border;
+    @apply bg-background-white rounded-2xl border border-border;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
   }
 
   .panel {
-    @apply bg-accent p-2 sm:p-4 rounded-lg shadow-inner text-accent-dark font-semibold;
+    @apply bg-accent p-2 sm:p-4 rounded-xl text-accent-dark font-semibold;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.08);
   }
 
   .button-active {
-    @apply bg-primary text-white border-primary shadow-md transition-all duration-150;
+    @apply bg-primary text-white border-primary;
+    box-shadow: 0 2px 12px rgba(59, 130, 246, 0.3), 0 1px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .no-transition {

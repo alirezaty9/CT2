@@ -239,7 +239,7 @@ const Toolbar = ({ className = "" }) => {
         className
       )}
       animate={{ width: isExpanded ? (window.innerWidth < 640 ? 192 : 256) : (window.innerWidth < 640 ? 48 : 64) }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
+      transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
     >
       {/* Header */}
       <div className="flex items-center justify-between p-2 sm:p-3 border-b border-border">
@@ -259,9 +259,10 @@ const Toolbar = ({ className = "" }) => {
 
         <motion.button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="p-1.5 sm:p-2 rounded-lg bg-background-primary hover:bg-accent border border-border hover:border-primary transition-all duration-300 shadow-sm hover:shadow-md"
+          className="p-1.5 sm:p-2 rounded-xl bg-background-primary hover:bg-accent border border-border hover:border-primary shadow-sm hover:shadow-md"
+          style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
           whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
+          whileTap={{ scale: 0.92 }}
         >
           {isExpanded ? <ChevronLeft size={14} className="text-primary sm:w-4 sm:h-4" /> : <ChevronRight size={14} className="text-primary sm:w-4 sm:h-4" />}
         </motion.button>
@@ -290,13 +291,14 @@ const Toolbar = ({ className = "" }) => {
                   <motion.button
                     onClick={() => handleToolClick(name)}
                     className={twMerge(
-                      "w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl transition-all duration-300 group font-medium shadow-sm hover:shadow-md",
+                      "w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl group font-medium shadow-sm hover:shadow-md",
                       isActive
                         ? "bg-gradient-to-r from-primary to-primary-dark text-white shadow-lg shadow-primary/30"
                         : "bg-background-primary hover:bg-accent text-text hover:text-primary border border-border hover:border-primary"
                     )}
+                    style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
                     whileHover={{ scale: 1.03, y: -2 }}
-                    whileTap={{ scale: 0.97 }}
+                    whileTap={{ scale: 0.96 }}
                   >
                     <Icon size={16} className={twMerge(isActive ? "drop-shadow-md" : "", "sm:w-5 sm:h-5")} />
                     <div className="flex-1 text-left min-w-0">
@@ -320,13 +322,14 @@ const Toolbar = ({ className = "" }) => {
                     <motion.button
                       onClick={() => handleToolClick(name)}
                       className={twMerge(
-                        "p-1.5 sm:p-2.5 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md",
+                        "p-1.5 sm:p-2.5 rounded-xl shadow-sm hover:shadow-md",
                         isActive
                           ? "bg-gradient-to-br from-primary to-primary-dark text-white shadow-lg shadow-primary/30"
                           : "bg-background-primary hover:bg-accent text-text-muted hover:text-primary border border-border hover:border-primary"
                       )}
-                      whileHover={{ scale: 1.1, y: -2 }}
-                      whileTap={{ scale: 0.95 }}
+                      style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                      whileHover={{ scale: 1.12, y: -2 }}
+                      whileTap={{ scale: 0.93 }}
                       title={`${t(name)} (${hotkey})`}
                     >
                       <Icon size={16} className={twMerge(isActive ? "drop-shadow-md" : "", "sm:w-5 sm:h-5")} />
@@ -360,9 +363,10 @@ const Toolbar = ({ className = "" }) => {
             {/* Color Picker Button */}
             <motion.button
               onClick={() => setShowColorPicker(!showColorPicker)}
-              className="w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl bg-background-primary hover:bg-accent border border-border hover:border-primary transition-all duration-300 shadow-sm hover:shadow-md"
+              className="w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl bg-background-primary hover:bg-accent border border-border hover:border-primary shadow-sm hover:shadow-md"
+              style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
               whileHover={{ scale: 1.02, y: -2 }}
-              whileTap={{ scale: 0.98 }}
+              whileTap={{ scale: 0.97 }}
             >
               <Palette size={16} className="text-primary sm:w-4 sm:h-5" />
               <span className="text-xs sm:text-sm font-medium">انتخاب رنگ</span>
@@ -375,9 +379,10 @@ const Toolbar = ({ className = "" }) => {
             {/* Settings Button */}
             <motion.button
               onClick={() => setShowSettings(!showSettings)}
-              className="w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl bg-background-primary hover:bg-accent border border-border hover:border-primary transition-all duration-300 shadow-sm hover:shadow-md"
+              className="w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl bg-background-primary hover:bg-accent border border-border hover:border-primary shadow-sm hover:shadow-md"
+              style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
               whileHover={{ scale: 1.02, y: -2 }}
-              whileTap={{ scale: 0.98 }}
+              whileTap={{ scale: 0.97 }}
             >
               <Settings size={16} className="text-primary sm:w-4 sm:h-5" />
               <span className="text-xs sm:text-sm font-medium">تنظیمات</span>
@@ -387,9 +392,10 @@ const Toolbar = ({ className = "" }) => {
             <div className="flex gap-1 sm:gap-2">
               <motion.button
                 onClick={handleSave}
-                className="flex-1 flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-green-500/30 font-medium"
+                className="flex-1 flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 shadow-md hover:shadow-lg shadow-green-500/30 font-medium"
+                style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
                 whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
+                whileTap={{ scale: 0.94 }}
               >
                 <Save size={14} className="sm:w-4 sm:h-4" />
                 <span className="text-xs font-semibold">ذخیره</span>
@@ -397,9 +403,10 @@ const Toolbar = ({ className = "" }) => {
 
               <motion.button
                 onClick={clearDrawings}
-                className="flex-1 flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-red-500/30 font-medium"
+                className="flex-1 flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 shadow-md hover:shadow-lg shadow-red-500/30 font-medium"
+                style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
                 whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
+                whileTap={{ scale: 0.94 }}
               >
                 <X size={14} className="sm:w-4 sm:h-4" />
                 <span className="text-xs font-semibold">پاک</span>
@@ -620,28 +627,28 @@ const Toolbar = ({ className = "" }) => {
       {/* Crop Tool - Always mounted but conditionally visible */}
       {canvas && (
         <div className={`absolute left-full top-0 ml-2 z-50 ${activeTool === "crop" ? "" : "hidden"}`}>
-          <CropTool canvas={canvas} isActive={activeTool === "crop"} />
+          <CropTool canvas={canvas} isActive={activeTool === "crop"} onClose={() => applyTool(null)} />
         </div>
       )}
 
       {/* Zoom Tool - Visible when active */}
       {activeTool === "zoom" && canvas && (
         <div className="absolute left-full top-0 ml-2 z-50">
-          <ZoomTool canvas={canvas} isActive={activeTool === "zoom"} />
+          <ZoomTool canvas={canvas} isActive={activeTool === "zoom"} onClose={() => applyTool(null)} />
         </div>
       )}
 
       {/* Histogram Tool - Always mounted but conditionally visible */}
       {canvas && (
         <div className={`absolute left-full top-0 ml-2 z-50 ${activeTool === "histogram" ? "" : "hidden"}`}>
-          <HistogramTool canvas={canvas} isActive={activeTool === "histogram"} />
+          <HistogramTool canvas={canvas} isActive={activeTool === "histogram"} onClose={() => applyTool(null)} />
         </div>
       )}
 
       {/* Intensity Profile Tool - Always mounted but conditionally visible */}
       {canvas && (
         <div className={`absolute left-full top-0 ml-2 z-50 ${activeTool === "intensity" ? "" : "hidden"}`}>
-          <IntensityProfileTool canvas={canvas} isActive={activeTool === "intensity"} />
+          <IntensityProfileTool canvas={canvas} isActive={activeTool === "intensity"} onClose={() => applyTool(null)} />
         </div>
       )}
     </motion.div>

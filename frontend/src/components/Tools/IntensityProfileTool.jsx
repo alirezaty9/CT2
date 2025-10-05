@@ -1,14 +1,15 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Activity, Square, Minus, Info, Download, Trash2 } from 'lucide-react';
+import { Activity, Square, Minus, Info, X, Settings } from 'lucide-react';
 import { fabric } from 'fabric';
 import { useIntensityProfile } from '../../contexts/IntensityProfileContext';
 import { useToolLayer } from '../../hooks/useToolLayer';
 
-const IntensityProfileTool = ({ canvas, isActive }) => {
+const IntensityProfileTool = ({ canvas, isActive, onClose }) => {
   const [regionMode, setRegionMode] = useState('line'); // 'line' or 'rectangle'
   const [isDrawing, setIsDrawing] = useState(false);
   const [startPoint, setStartPoint] = useState(null);
+  const [showPanel, setShowPanel] = useState(false);
   const regionObjectRef = useRef(null);
 
   const { addProfile, selectedRegion, setSelectedRegion } = useIntensityProfile();
@@ -363,9 +364,11 @@ const IntensityProfileTool = ({ canvas, isActive }) => {
     };
   }, [canvas, isActive, handleMouseDown, handleMouseMove, handleMouseUp]);
 
-  // Cleanup when tool becomes inactive
+  // Auto-start drawing when tool becomes active
   useEffect(() => {
-    if (!isActive && canvas) {
+    if (isActive && canvas) {
+      startDrawing();
+    } else if (!isActive && canvas) {
       setIsDrawing(false);
       setStartPoint(null);
       removeRegionObject();
@@ -387,94 +390,158 @@ const IntensityProfileTool = ({ canvas, isActive }) => {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="w-80 bg-background-white dark:bg-background-secondary rounded-2xl shadow-2xl border border-border p-6"
+      className="w-72 sm:w-80 bg-background-white dark:bg-background-secondary rounded-2xl shadow-2xl border border-border p-4 sm:p-6"
     >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md">
-            <Activity size={20} />
-          </div>
-          <span className="text-base font-semibold text-text">Intensity Profile</span>
-        </div>
-      </div>
-
-      {/* Region Mode Selection */}
-      {!isDrawing && (
-        <div className="mb-5">
-          <div className="text-sm font-semibold text-text mb-2">Region Type</div>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { mode: 'line', label: 'Line', icon: Minus },
-              { mode: 'rectangle', label: 'Rectangle', icon: Square }
-            ].map(({ mode, label, icon: Icon }) => (
+      {!showPanel && !isDrawing ? (
+        // Minimal view
+        <div className="space-y-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md">
+                <Activity size={16} className="sm:w-5 sm:h-5" />
+              </div>
+              <span className="text-sm sm:text-base font-semibold text-text">Intensity Profile</span>
+            </div>
+            <div className="flex items-center gap-2">
               <motion.button
-                key={mode}
-                onClick={() => setRegionMode(mode)}
-                className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all duration-300 ${
-                  regionMode === mode
-                    ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/30'
-                    : 'bg-background-secondary dark:bg-background-primary text-text hover:bg-accent border border-border'
-                }`}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
+                onClick={() => setShowPanel(true)}
+                className="p-1.5 sm:p-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 shadow-md hover:shadow-lg shadow-green-500/30"
+                style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                whileHover={{ scale: 1.1, y: -2 }}
+                whileTap={{ scale: 0.93 }}
+                title="Settings"
               >
-                <Icon size={18} />
-                <span className="text-xs font-semibold">{label}</span>
+                <Settings size={14} className="sm:w-4 sm:h-4" />
               </motion.button>
-            ))}
+              <motion.button
+                onClick={onClose}
+                className="p-1.5 sm:p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 shadow-sm hover:shadow-md"
+                style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                whileHover={{ scale: 1.1, y: -2 }}
+                whileTap={{ scale: 0.93 }}
+                title="Close Tool"
+              >
+                <X size={14} className="sm:w-4 sm:h-4" />
+              </motion.button>
+            </div>
           </div>
         </div>
-      )}
-
-      {/* Instructions */}
-      {!isDrawing && (
-        <div className="mb-5 p-4 bg-accent dark:bg-background-primary rounded-xl border border-border">
-          <div className="flex items-start gap-2">
-            <Info size={18} className="text-green-500 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-text leading-relaxed">
-              {regionMode === 'line' && 'Draw a line to get intensity profile along the path'}
-              {regionMode === 'rectangle' && 'Draw a rectangle to get average horizontal and vertical intensity profiles'}
-            </p>
+      ) : isDrawing ? (
+        // Drawing indicator
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md">
+                <Activity size={20} />
+              </div>
+              <span className="text-base font-semibold text-text">Intensity Profile</span>
+            </div>
+            <motion.button
+              onClick={onClose}
+              className="p-1.5 sm:p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 shadow-sm hover:shadow-md"
+              style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+              whileHover={{ scale: 1.1, y: -2 }}
+              whileTap={{ scale: 0.93 }}
+              title="Close Tool"
+            >
+              <X size={14} className="sm:w-4 sm:h-4" />
+            </motion.button>
           </div>
+
+          <motion.div
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+            className="p-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl border border-green-500"
+          >
+            <div className="flex items-center gap-2">
+              {regionMode === 'line' ? <Minus size={18} className="animate-pulse" /> : <Square size={18} className="animate-pulse" />}
+              <p className="text-sm font-semibold">
+                {regionMode === 'line' && 'Click and drag to draw line...'}
+                {regionMode === 'rectangle' && 'Click and drag to draw rectangle...'}
+              </p>
+            </div>
+          </motion.div>
         </div>
-      )}
-
-      {/* Start Drawing Button */}
-      {!isDrawing && (
-        <motion.button
-          onClick={startDrawing}
-          className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-green-500/30 font-semibold"
-          whileHover={{ scale: 1.02, y: -2 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          {regionMode === 'line' ? <Minus size={18} /> : <Square size={18} />}
-          <span>Draw {regionMode === 'line' ? 'Line' : 'Rectangle'}</span>
-        </motion.button>
-      )}
-
-      {/* Drawing indicator */}
-      {isDrawing && (
-        <motion.div
-          animate={{ scale: [1, 1.05, 1] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-          className="p-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl border border-green-500"
-        >
-          <div className="flex items-center gap-2">
-            {regionMode === 'line' ? <Minus size={18} className="animate-pulse" /> : <Square size={18} className="animate-pulse" />}
-            <p className="text-sm font-semibold">
-              {regionMode === 'line' && 'Click and drag to draw line...'}
-              {regionMode === 'rectangle' && 'Click and drag to draw rectangle...'}
-            </p>
+      ) : (
+        // Full settings panel
+        <div className="space-y-5">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md">
+                <Activity size={20} />
+              </div>
+              <span className="text-base font-semibold text-text">Intensity Profile</span>
+            </div>
+            <motion.button
+              onClick={() => setShowPanel(false)}
+              className="p-1.5 sm:p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 shadow-sm hover:shadow-md"
+              style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+              whileHover={{ scale: 1.1, y: -2 }}
+              whileTap={{ scale: 0.93 }}
+              title="Collapse"
+            >
+              <X size={14} className="sm:w-4 sm:h-4" />
+            </motion.button>
           </div>
-        </motion.div>
-      )}
 
-      {/* Current Layer Info */}
-      {getCurrentLayer() && (
-        <div className="mt-4 p-3 bg-background-secondary dark:bg-background-primary rounded-lg border border-border">
-          <div className="text-xs text-text-muted">Layer</div>
-          <div className="text-sm font-semibold text-text">{getCurrentLayer().name}</div>
+          {/* Region Mode Selection */}
+          <div>
+            <div className="text-sm font-semibold text-text mb-2">Region Type</div>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { mode: 'line', label: 'Line', icon: Minus },
+                { mode: 'rectangle', label: 'Rectangle', icon: Square }
+              ].map(({ mode, label, icon: Icon }) => (
+                <motion.button
+                  key={mode}
+                  onClick={() => setRegionMode(mode)}
+                  className={`flex flex-col items-center gap-1 p-3 rounded-xl ${
+                    regionMode === mode
+                      ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/30'
+                      : 'bg-background-secondary dark:bg-background-primary text-text hover:bg-accent border border-border'
+                  }`}
+                  style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                >
+                  <Icon size={18} />
+                  <span className="text-xs font-semibold">{label}</span>
+                </motion.button>
+              ))}
+            </div>
+          </div>
+
+          {/* Instructions */}
+          <div className="p-4 bg-accent dark:bg-background-primary rounded-xl border border-border">
+            <div className="flex items-start gap-2">
+              <Info size={18} className="text-green-500 mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-text leading-relaxed">
+                {regionMode === 'line' && 'Draw a line to get intensity profile along the path'}
+                {regionMode === 'rectangle' && 'Draw a rectangle to get average horizontal and vertical intensity profiles'}
+              </p>
+            </div>
+          </div>
+
+          {/* Start Drawing Button */}
+          <motion.button
+            onClick={startDrawing}
+            className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 shadow-md hover:shadow-lg shadow-green-500/30 font-semibold"
+            style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.97 }}
+          >
+            {regionMode === 'line' ? <Minus size={18} /> : <Square size={18} />}
+            <span>Draw {regionMode === 'line' ? 'Line' : 'Rectangle'}</span>
+          </motion.button>
+
+          {/* Current Layer Info */}
+          {getCurrentLayer() && (
+            <div className="p-3 bg-background-secondary dark:bg-background-primary rounded-lg border border-border">
+              <div className="text-xs text-text-muted">Layer</div>
+              <div className="text-sm font-semibold text-text">{getCurrentLayer().name}</div>
+            </div>
+          )}
         </div>
       )}
     </motion.div>

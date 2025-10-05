@@ -50,6 +50,23 @@ module.exports = {
         '3xl': ['1.875rem', { lineHeight: '2.25rem' }],
         '4xl': ['2.25rem', { lineHeight: '2.5rem' }],
       },
+      borderRadius: {
+        'sm': '0.375rem',
+        'DEFAULT': '0.5rem',
+        'md': '0.625rem',
+        'lg': '0.75rem',
+        'xl': '0.875rem',
+        '2xl': '1rem',
+        '3xl': '1.25rem',
+      },
+      transitionTimingFunction: {
+        'smooth': 'cubic-bezier(0.4, 0, 0.2, 1)',
+        'smooth-in': 'cubic-bezier(0.4, 0, 1, 1)',
+        'smooth-out': 'cubic-bezier(0, 0, 0.2, 1)',
+      },
+      transitionDuration: {
+        'smooth': '300ms',
+      },
     },
   },
   safelist: [

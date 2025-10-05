@@ -11,7 +11,7 @@ import {
   Settings
 } from 'lucide-react';
 
-const CropTool = forwardRef(({ canvas, isActive }, ref) => {
+const CropTool = forwardRef(({ canvas, isActive, onClose }, ref) => {
   const [showPanel, setShowPanel] = useState(false);
   const [cropMode, setCropMode] = useState(false);
   const [aspectRatio, setAspectRatio] = useState('free');
@@ -498,21 +498,37 @@ const CropTool = forwardRef(({ canvas, isActive }, ref) => {
     >
       {!showPanel && !cropMode ? (
         // Minimal view
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-md">
-              <Crop size={16} className="sm:w-5 sm:h-5" />
+        <div className="space-y-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-md">
+                <Crop size={16} className="sm:w-5 sm:h-5" />
+              </div>
+              <span className="text-sm sm:text-base font-semibold text-text">Crop Tool</span>
             </div>
-            <span className="text-sm sm:text-base font-semibold text-text">Crop Tool</span>
+            <div className="flex items-center gap-2">
+              <motion.button
+                onClick={() => setShowPanel(true)}
+                className="p-1.5 sm:p-2 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl hover:from-primary-dark hover:to-primary shadow-md hover:shadow-lg shadow-primary/30"
+                style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                whileHover={{ scale: 1.1, y: -2 }}
+                whileTap={{ scale: 0.93 }}
+                title="Settings"
+              >
+                <Settings size={14} className="sm:w-4 sm:h-4" />
+              </motion.button>
+              <motion.button
+                onClick={onClose}
+                className="p-1.5 sm:p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 shadow-sm hover:shadow-md"
+                style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                whileHover={{ scale: 1.1, y: -2 }}
+                whileTap={{ scale: 0.93 }}
+                title="Close Tool"
+              >
+                <X size={14} className="sm:w-4 sm:h-4" />
+              </motion.button>
+            </div>
           </div>
-          <motion.button
-            onClick={() => setShowPanel(true)}
-            className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl hover:from-primary-dark hover:to-primary transition-all duration-300 shadow-md hover:shadow-lg shadow-primary/30 text-xs sm:text-sm font-semibold"
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Settings size={14} className="sm:w-4 sm:h-4" />
-          </motion.button>
         </div>
       ) : cropMode ? (
         // Crop mode active

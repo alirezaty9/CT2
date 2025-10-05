@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, Crosshair, Info, Square, Minus } from 'lucide-react';
+import { BarChart3, Crosshair, Info, Square, Minus, X, Settings } from 'lucide-react';
 import { useHistogram } from '../../contexts/HistogramContext';
 import { fabric } from 'fabric';
 import { useToolLayer } from '../../hooks/useToolLayer';
 
-const HistogramTool = ({ canvas, isActive }) => {
-  const [selectionMode, setSelectionMode] = useState('point'); // 'point', 'area', 'line'
+const HistogramTool = ({ canvas, isActive, onClose }) => {
+  const [selectionMode, setSelectionMode] = useState('area'); // 'point', 'area', 'line' - default to 'area'
   const [isSelecting, setIsSelecting] = useState(false);
   const [startPoint, setStartPoint] = useState(null);
+  const [showPanel, setShowPanel] = useState(false);
   const selectionObjectRef = useRef(null);
   const overlaysRef = useRef([]);
   const { updateHistogram } = useHistogram();
@@ -521,9 +522,11 @@ const HistogramTool = ({ canvas, isActive }) => {
     };
   }, [canvas, isActive, handleMouseDown, handleMouseMove, handleMouseUp]);
 
-  // Cleanup when tool becomes inactive
+  // Auto-start selection when tool becomes active
   useEffect(() => {
-    if (!isActive && canvas) {
+    if (isActive && canvas) {
+      startSelection();
+    } else if (!isActive && canvas) {
       setIsSelecting(false);
       setStartPoint(null);
       removeSelectionObject();
@@ -537,94 +540,157 @@ const HistogramTool = ({ canvas, isActive }) => {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="w-80 bg-background-white dark:bg-background-secondary rounded-2xl shadow-2xl border border-border p-6"
+      className="w-72 sm:w-80 bg-background-white dark:bg-background-secondary rounded-2xl shadow-2xl border border-border p-4 sm:p-6"
     >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-md">
-            <BarChart3 size={20} />
-          </div>
-          <span className="text-base font-semibold text-text">Histogram Tool</span>
-        </div>
-      </div>
-
-      {/* Selection Mode Buttons */}
-      {!isSelecting && (
-        <div className="mb-5">
-          <div className="text-sm font-semibold text-text mb-2">Selection Mode</div>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { mode: 'point', label: 'Point', icon: Crosshair },
-              { mode: 'area', label: 'Area', icon: Square },
-              { mode: 'line', label: 'Line', icon: Minus }
-            ].map(({ mode, label, icon: Icon }) => (
+      {!showPanel && !isSelecting ? (
+        // Minimal view
+        <div className="space-y-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-md">
+                <BarChart3 size={16} className="sm:w-5 sm:h-5" />
+              </div>
+              <span className="text-sm sm:text-base font-semibold text-text">Histogram Tool</span>
+            </div>
+            <div className="flex items-center gap-2">
               <motion.button
-                key={mode}
-                onClick={() => setSelectionMode(mode)}
-                className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300 ${
-                  selectionMode === mode
-                    ? 'bg-gradient-to-r from-primary to-primary-dark text-white shadow-lg shadow-primary/30'
-                    : 'bg-background-secondary dark:bg-background-primary text-text hover:bg-accent border border-border'
-                }`}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
+                onClick={() => setShowPanel(true)}
+                className="p-1.5 sm:p-2 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl hover:from-primary-dark hover:to-primary shadow-md hover:shadow-lg shadow-primary/30"
+                style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                whileHover={{ scale: 1.1, y: -2 }}
+                whileTap={{ scale: 0.93 }}
+                title="Settings"
               >
-                <Icon size={18} />
-                <span className="text-xs font-semibold">{label}</span>
+                <Settings size={14} className="sm:w-4 sm:h-4" />
               </motion.button>
-            ))}
+              <motion.button
+                onClick={onClose}
+                className="p-1.5 sm:p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 shadow-sm hover:shadow-md"
+                style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                whileHover={{ scale: 1.1, y: -2 }}
+                whileTap={{ scale: 0.93 }}
+                title="Close Tool"
+              >
+                <X size={14} className="sm:w-4 sm:h-4" />
+              </motion.button>
+            </div>
           </div>
         </div>
-      )}
-
-      {/* Instructions */}
-      {!isSelecting && (
-        <div className="mb-5 p-4 bg-accent dark:bg-background-primary rounded-xl border border-border">
-          <div className="flex items-start gap-2">
-            <Info size={18} className="text-primary mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-text leading-relaxed">
-              {selectionMode === 'point' && 'Click on a point to analyze 50px radius around it'}
-              {selectionMode === 'area' && 'Click and drag to select a rectangular area'}
-              {selectionMode === 'line' && 'Click and drag to draw a line across the image'}
-            </p>
+      ) : isSelecting ? (
+        // Selecting indicator
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-md">
+                <BarChart3 size={20} />
+              </div>
+              <span className="text-base font-semibold text-text">Histogram Tool</span>
+            </div>
+            <motion.button
+              onClick={onClose}
+              className="p-1.5 sm:p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 shadow-sm hover:shadow-md"
+              style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+              whileHover={{ scale: 1.1, y: -2 }}
+              whileTap={{ scale: 0.93 }}
+              title="Close Tool"
+            >
+              <X size={14} className="sm:w-4 sm:h-4" />
+            </motion.button>
           </div>
+          <motion.div
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+            className="p-4 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl border border-primary"
+          >
+            <div className="flex items-center gap-2">
+              {selectionMode === 'point' && <Crosshair size={18} className="animate-pulse" />}
+              {selectionMode === 'area' && <Square size={18} className="animate-pulse" />}
+              {selectionMode === 'line' && <Minus size={18} className="animate-pulse" />}
+              <p className="text-sm font-semibold">
+                {selectionMode === 'point' && 'Click anywhere on the image...'}
+                {selectionMode === 'area' && 'Click and drag to select area...'}
+                {selectionMode === 'line' && 'Click and drag to draw line...'}
+              </p>
+            </div>
+          </motion.div>
         </div>
-      )}
-
-      {/* Start Selection Button */}
-      {!isSelecting && (
-        <motion.button
-          onClick={startSelection}
-          className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl hover:from-primary-dark hover:to-primary transition-all duration-300 shadow-md hover:shadow-lg shadow-primary/30 font-semibold"
-          whileHover={{ scale: 1.02, y: -2 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          {selectionMode === 'point' && <Crosshair size={18} />}
-          {selectionMode === 'area' && <Square size={18} />}
-          {selectionMode === 'line' && <Minus size={18} />}
-          <span>Start {selectionMode === 'point' ? 'Point' : selectionMode === 'area' ? 'Area' : 'Line'} Selection</span>
-        </motion.button>
-      )}
-
-      {/* Selecting indicator */}
-      {isSelecting && (
-        <motion.div
-          animate={{ scale: [1, 1.05, 1] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-          className="p-4 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl border border-primary"
-        >
-          <div className="flex items-center gap-2">
-            {selectionMode === 'point' && <Crosshair size={18} className="animate-pulse" />}
-            {selectionMode === 'area' && <Square size={18} className="animate-pulse" />}
-            {selectionMode === 'line' && <Minus size={18} className="animate-pulse" />}
-            <p className="text-sm font-semibold">
-              {selectionMode === 'point' && 'Click anywhere on the image...'}
-              {selectionMode === 'area' && 'Click and drag to select area...'}
-              {selectionMode === 'line' && 'Click and drag to draw line...'}
-            </p>
+      ) : (
+        // Full settings panel
+        <div className="space-y-5">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-md">
+                <BarChart3 size={20} />
+              </div>
+              <span className="text-base font-semibold text-text">Histogram Tool</span>
+            </div>
+            <motion.button
+              onClick={() => setShowPanel(false)}
+              className="p-1.5 sm:p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 shadow-sm hover:shadow-md"
+              style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+              whileHover={{ scale: 1.1, y: -2 }}
+              whileTap={{ scale: 0.93 }}
+              title="Collapse"
+            >
+              <X size={14} className="sm:w-4 sm:h-4" />
+            </motion.button>
           </div>
-        </motion.div>
+
+          {/* Selection Mode Buttons */}
+          <div>
+            <div className="text-sm font-semibold text-text mb-2">Selection Mode</div>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { mode: 'point', label: 'Point', icon: Crosshair },
+                { mode: 'area', label: 'Area', icon: Square },
+                { mode: 'line', label: 'Line', icon: Minus }
+              ].map(({ mode, label, icon: Icon }) => (
+                <motion.button
+                  key={mode}
+                  onClick={() => setSelectionMode(mode)}
+                  className={`flex flex-col items-center gap-1 p-3 rounded-xl ${
+                    selectionMode === mode
+                      ? 'bg-gradient-to-r from-primary to-primary-dark text-white shadow-lg shadow-primary/30'
+                      : 'bg-background-secondary dark:bg-background-primary text-text hover:bg-accent border border-border'
+                  }`}
+                  style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                >
+                  <Icon size={18} />
+                  <span className="text-xs font-semibold">{label}</span>
+                </motion.button>
+              ))}
+            </div>
+          </div>
+
+          {/* Instructions */}
+          <div className="p-4 bg-accent dark:bg-background-primary rounded-xl border border-border">
+            <div className="flex items-start gap-2">
+              <Info size={18} className="text-primary mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-text leading-relaxed">
+                {selectionMode === 'point' && 'Click on a point to analyze 50px radius around it'}
+                {selectionMode === 'area' && 'Click and drag to select a rectangular area'}
+                {selectionMode === 'line' && 'Click and drag to draw a line across the image'}
+              </p>
+            </div>
+          </div>
+
+          {/* Start Selection Button */}
+          <motion.button
+            onClick={startSelection}
+            className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl hover:from-primary-dark hover:to-primary shadow-md hover:shadow-lg shadow-primary/30 font-semibold"
+            style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.97 }}
+          >
+            {selectionMode === 'point' && <Crosshair size={18} />}
+            {selectionMode === 'area' && <Square size={18} />}
+            {selectionMode === 'line' && <Minus size={18} />}
+            <span>Start {selectionMode === 'point' ? 'Point' : selectionMode === 'area' ? 'Area' : 'Line'} Selection</span>
+          </motion.button>
+        </div>
       )}
     </motion.div>
   );

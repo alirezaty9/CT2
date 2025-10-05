@@ -21,7 +21,7 @@ const TabNav = ({ tabs }) => {
           to={tab.to}
           className={({ isActive }) =>
             twMerge(
-              "px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-all duration-300 flex items-center whitespace-nowrap flex-shrink-0 min-w-fit",
+              "px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium flex items-center whitespace-nowrap flex-shrink-0 min-w-fit",
               isActive ? "tab-active" : "tab-inactive"
             )
           }
