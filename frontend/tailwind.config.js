@@ -4,6 +4,19 @@ module.exports = {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
+      screens: {
+        'xs': '475px',
+        'sm': '640px',
+        'md': '768px',
+        'lg': '1024px',
+        'xl': '1280px',
+        '2xl': '1536px',
+        // Custom breakpoints for better responsive design
+        'mobile': '320px',
+        'tablet': '768px',
+        'desktop': '1024px',
+        'wide': '1440px',
+      },
       colors: {
         primary: 'var(--color-primary)',
         'primary-dark': 'var(--color-primary-dark)',
@@ -22,12 +35,30 @@ module.exports = {
         accent: 'var(--color-accent)',
         'accent-dark': 'var(--color-accent-dark)',
       },
+      spacing: {
+        '18': '4.5rem',
+        '88': '22rem',
+        '128': '32rem',
+      },
+      fontSize: {
+        'xs': ['0.75rem', { lineHeight: '1rem' }],
+        'sm': ['0.875rem', { lineHeight: '1.25rem' }],
+        'base': ['1rem', { lineHeight: '1.5rem' }],
+        'lg': ['1.125rem', { lineHeight: '1.75rem' }],
+        'xl': ['1.25rem', { lineHeight: '1.75rem' }],
+        '2xl': ['1.5rem', { lineHeight: '2rem' }],
+        '3xl': ['1.875rem', { lineHeight: '2.25rem' }],
+        '4xl': ['2.25rem', { lineHeight: '2.5rem' }],
+      },
     },
   },
   safelist: [
     {
       pattern: /variant-(default|primary|highlight)/,
     },
+    {
+      pattern: /(xs|sm|md|lg|xl|2xl):(w|h|p|m|text|flex|grid|hidden|block)/
+    }
   ],
   plugins: [],
 };

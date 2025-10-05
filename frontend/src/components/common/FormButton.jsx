@@ -18,9 +18,9 @@ const FormButton = ({
   const baseClasses = 'font-vazir transition-all duration-200 rounded-lg font-medium';
   
   const sizeClasses = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-base', 
-    lg: 'px-6 py-3 text-lg'
+    sm: 'px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm',
+    md: 'px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base', 
+    lg: 'px-4 sm:px-6 py-2 sm:py-3 text-base sm:text-lg'
   };
 
   const variantClasses = {
@@ -45,11 +45,11 @@ const FormButton = ({
       className={buttonClass}
       {...props}
     >
-      <div className={`flex items-center gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
+      <div className={`flex items-center gap-1 sm:gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
         {loading ? (
-          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+          <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
         ) : (
-          Icon && <Icon className="w-4 h-4" />
+          Icon && <Icon className="w-3 h-3 sm:w-4 sm:h-4" />
         )}
         {children}
       </div>

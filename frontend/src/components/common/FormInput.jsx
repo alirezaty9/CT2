@@ -18,11 +18,11 @@ const FormInput = ({
   const textAlign = i18n.language === 'fa' ? 'text-right' : 'text-left';
 
   const baseClasses = `
-    w-full p-3 border border-border rounded-lg 
+    w-full p-2 sm:p-3 border border-border rounded-lg 
     bg-background-white dark:bg-background-secondary 
     text-text dark:text-text outline-none 
     focus:border-primary focus:shadow-sm focus:shadow-primary/50 
-    transition-colors
+    transition-colors text-sm sm:text-base
     ${disabled ? 'cursor-not-allowed opacity-50' : ''}
     ${textAlign}
   `;

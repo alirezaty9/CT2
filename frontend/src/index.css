@@ -134,7 +134,7 @@ body {
   }
 
   .panel {
-    @apply bg-accent p-4 rounded-lg shadow-inner text-accent-dark font-semibold;
+    @apply bg-accent p-2 sm:p-4 rounded-lg shadow-inner text-accent-dark font-semibold;
   }
 
   .button-active {
@@ -143,6 +143,79 @@ body {
 
   .no-transition {
     @apply transition-none;
+  }
+
+  /* Responsive utilities */
+  .responsive-container {
+    @apply w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6;
+  }
+
+  .responsive-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4;
+  }
+
+  .responsive-flex {
+    @apply flex flex-col sm:flex-row gap-3 sm:gap-4;
+  }
+
+  .responsive-text {
+    @apply text-sm sm:text-base lg:text-lg;
+  }
+
+  .responsive-padding {
+    @apply p-3 sm:p-4 lg:p-6;
+  }
+
+  .responsive-margin {
+    @apply m-3 sm:m-4 lg:m-6;
+  }
+
+  /* Mobile-first responsive design */
+  .mobile-menu {
+    @apply lg:hidden;
+  }
+
+  .desktop-menu {
+    @apply hidden lg:flex;
+  }
+
+  /* Responsive canvas container */
+  .canvas-container {
+    @apply w-full h-full min-h-[200px] sm:min-h-[300px] md:min-h-[400px] lg:min-h-[500px];
+  }
+
+  /* Responsive toolbar */
+  .responsive-toolbar {
+    @apply flex flex-col sm:flex-row gap-2 sm:gap-4 p-2 sm:p-4;
+  }
+
+  /* Responsive modal */
+  .responsive-modal {
+    @apply w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto;
+  }
+  .mobile-layout {
+    @apply flex flex-col min-h-screen;
+  }
+  .desktop-layout {
+    @apply lg:flex-row lg:min-h-screen lg:max-h-screen;
+  }
+  .responsive-layout {
+    @apply flex flex-col lg:flex-row min-h-screen lg:max-h-screen lg:overflow-hidden;
+  }
+  .mobile-column {
+    @apply w-full lg:w-2/5 flex flex-col gap-2 min-h-0;
+  }
+  .desktop-column {
+    @apply w-full lg:w-3/5 flex flex-col gap-2 min-h-0;
+  }
+
+  /* Scrollbar hide utility */
+  .scrollbar-hide {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, and Opera */
   }
 }
 

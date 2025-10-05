@@ -215,14 +215,14 @@ const IntensityProfileDisplay = () => {
   }
 
   return (
-    <div className="h-full flex flex-col gap-2">
-      {/* Left side - Controls and Info */}
-      <div className="flex items-center justify-between">
+    <div className="h-full flex flex-col gap-1.5 overflow-hidden">
+      {/* Top - Controls and Info */}
+      <div className="flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
         {/* Profile Type */}
         <div className="flex items-center gap-2">
-          <Activity size={16} className="text-green-500" />
+          <Activity size={14} className="text-green-500" />
           <span className="text-xs font-semibold text-text">
-            {activeProfile.type === 'line' ? 'Line Profile' : 'Rectangle Profile'}
+            {activeProfile.type === 'line' ? 'Line' : 'Rectangle'}
           </span>
         </div>
 
@@ -235,7 +235,7 @@ const IntensityProfileDisplay = () => {
             whileTap={{ scale: 0.9 }}
             title="Export to CSV"
           >
-            <Download size={14} className="text-green-500" />
+            <Download size={12} className="text-green-500" />
           </motion.button>
           <motion.button
             onClick={() => removeProfile(activeProfile.id)}
@@ -244,77 +244,80 @@ const IntensityProfileDisplay = () => {
             whileTap={{ scale: 0.9 }}
             title="Delete Profile"
           >
-            <Trash2 size={14} className="text-red-500" />
+            <Trash2 size={12} className="text-red-500" />
           </motion.button>
         </div>
       </div>
 
-      {/* Channel Selector */}
-      <div className="flex gap-1">
-        {[
-          { key: 'intensity', label: 'Gray', color: 'from-gray-500 to-gray-600' },
-          { key: 'red', label: 'Red', color: 'from-red-500 to-red-600' },
-          { key: 'green', label: 'Grn', color: 'from-green-500 to-green-600' },
-          { key: 'blue', label: 'Blue', color: 'from-blue-500 to-blue-600' }
-        ].map(({ key, label, color }) => (
-          <motion.button
-            key={key}
-            onClick={() => setShowChannel(key)}
-            className={`px-2 py-1 text-xs font-semibold rounded-lg transition-all duration-300 ${
-              showChannel === key
-                ? `bg-gradient-to-r ${color} text-white shadow-md`
-                : 'bg-background-secondary dark:bg-background-primary text-text hover:bg-accent border border-border'
-            }`}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            {label}
-          </motion.button>
-        ))}
-      </div>
-
-      {/* Profile View Selector (for rectangle) */}
-      {activeProfile.type === 'rectangle' && (
-        <div className="flex gap-1">
+      {/* Channel and View Selectors */}
+      <div className="flex gap-2 flex-wrap flex-shrink-0">
+        {/* Channel Selector */}
+        <div className="flex gap-1 flex-wrap">
           {[
-            { key: 'horizontal', label: 'Horizontal' },
-            { key: 'vertical', label: 'Vertical' }
-          ].map(({ key, label }) => (
+            { key: 'intensity', label: 'Gray', color: 'from-gray-500 to-gray-600' },
+            { key: 'red', label: 'R', color: 'from-red-500 to-red-600' },
+            { key: 'green', label: 'G', color: 'from-green-500 to-green-600' },
+            { key: 'blue', label: 'B', color: 'from-blue-500 to-blue-600' }
+          ].map(({ key, label, color }) => (
             <motion.button
               key={key}
-              onClick={() => setProfileView(key)}
-              className={`flex-1 px-2 py-1 text-xs font-semibold rounded-lg transition-all duration-300 ${
-                profileView === key
-                  ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md'
+              onClick={() => setShowChannel(key)}
+              className={`px-2 py-1 text-xs font-semibold rounded-lg transition-all duration-300 flex-shrink-0 ${
+                showChannel === key
+                  ? `bg-gradient-to-r ${color} text-white shadow-md`
                   : 'bg-background-secondary dark:bg-background-primary text-text hover:bg-accent border border-border'
               }`}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
               {label}
             </motion.button>
           ))}
         </div>
-      )}
+
+        {/* Profile View Selector (for rectangle) */}
+        {activeProfile.type === 'rectangle' && (
+          <div className="flex gap-1">
+            {[
+              { key: 'horizontal', label: 'H' },
+              { key: 'vertical', label: 'V' }
+            ].map(({ key, label }) => (
+              <motion.button
+                key={key}
+                onClick={() => setProfileView(key)}
+                className={`px-2 py-1 text-xs font-semibold rounded-lg transition-all duration-300 ${
+                  profileView === key
+                    ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md'
+                    : 'bg-background-secondary dark:bg-background-primary text-text hover:bg-accent border border-border'
+                }`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                {label}
+              </motion.button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Chart Canvas */}
-      <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg border border-border p-2">
+      <div className="flex-1 min-h-0 bg-white dark:bg-gray-800 rounded-lg border border-border p-1 overflow-hidden">
         <canvas
           ref={canvasRef}
           width={800}
           height={150}
-          className="w-full h-full"
+          className="w-full h-full object-contain"
         />
       </div>
 
       {/* Statistics (for rectangle) */}
       {activeProfile.type === 'rectangle' && activeProfile.data.statistics && (
-        <div className="grid grid-cols-3 gap-1 text-xs">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-1 text-xs flex-shrink-0">
           {Object.entries(activeProfile.data.statistics).map(([key, value]) => (
-            <div key={key} className="bg-background-secondary dark:bg-background-primary rounded px-2 py-1 border border-border">
-              <div className="text-text-muted capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</div>
-              <div className="font-mono font-semibold text-text">
-                {typeof value === 'number' ? value.toFixed(2) : value}
+            <div key={key} className="bg-background-secondary dark:bg-background-primary rounded px-1 py-1 border border-border">
+              <div className="text-text-muted capitalize truncate text-xs">{key.replace(/([A-Z])/g, ' $1').trim()}</div>
+              <div className="font-mono font-semibold text-text text-xs">
+                {typeof value === 'number' ? value.toFixed(1) : value}
               </div>
             </div>
           ))}

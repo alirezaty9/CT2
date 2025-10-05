@@ -670,7 +670,7 @@ const BaslerDisplay = () => {
         ref={canvasRef}
         width={640}
         height={480}
-        className="w-full h-full object-contain cursor-crosshair  mx-auto "
+        className="w-full h-full object-contain cursor-crosshair mx-auto"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -684,8 +684,8 @@ const BaslerDisplay = () => {
       />
       {!cameras.basler.currentFrame && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-white text-sm mb-2">
+          <div className="text-center p-4">
+            <div className="text-white text-xs sm:text-sm mb-2">
               {wsStatus === 'connecting' && '🔄 اتصال به باسلر...'}
               {wsStatus === 'connected' && '⏳ در انتظار تصویر باسلر...'}
               {wsStatus === 'reconnecting' && '🔄 تلاش برای اتصال مجدد...'}
@@ -701,23 +701,27 @@ const BaslerDisplay = () => {
           </div>
         </div>
       )}
-      <div className="absolute top-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-sm font-mono">
-        X: {Math.round(cursorPosition.x)} | Y: {Math.round(cursorPosition.y)}
+      <div className="absolute top-1 sm:top-2 left-1 sm:left-2 bg-black/70 text-white px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs sm:text-sm font-mono">
+        <span className="hidden sm:inline">X: {Math.round(cursorPosition.x)} | Y: {Math.round(cursorPosition.y)}</span>
+        <span className="sm:hidden">{Math.round(cursorPosition.x)},{Math.round(cursorPosition.y)}</span>
       </div>
       {activeTool && (
-        <div className="absolute top-2 right-2 bg-primary text-white px-2 py-1 rounded text-sm">
-          {activeTool}
+        <div className="absolute top-1 sm:top-2 right-1 sm:right-2 bg-primary text-white px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs sm:text-sm">
+          <span className="hidden sm:inline">{activeTool}</span>
+          <span className="sm:hidden">{activeTool.charAt(0)}</span>
         </div>
       )}
-      <div className={`absolute bottom-2 left-2 w-3 h-3 rounded-full ${
+      <div className={`absolute bottom-1 sm:bottom-2 left-1 sm:left-2 w-2 h-2 sm:w-3 sm:h-3 rounded-full ${
         cameras.basler.isConnected && cameras.basler.currentFrame ? 'bg-green-500' : 'bg-red-500'
       }`} />
       {cameras.basler.lastUpdate && (
-        <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs space-y-1">
-          <div>{formatLastUpdate(cameras.basler.lastUpdate)}</div>
+        <div className="absolute bottom-1 sm:bottom-2 right-1 sm:right-2 bg-black/70 text-white px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs">
+          <div className="hidden sm:block">{formatLastUpdate(cameras.basler.lastUpdate)}</div>
+          <div className="sm:hidden text-xs">{formatLastUpdate(cameras.basler.lastUpdate).split(' ')[1]}</div>
           {cameras.basler.avgFps > 0 && (
-            <div className="text-green-400">
-              FPS: {cameras.basler.avgFps} | Frames: {cameras.basler.frameCount}
+            <div className="text-green-400 text-xs">
+              <span className="hidden sm:inline">FPS: {cameras.basler.avgFps} | Frames: {cameras.basler.frameCount}</span>
+              <span className="sm:hidden">{cameras.basler.avgFps}fps</span>
             </div>
           )}
         </div>

@@ -15,9 +15,9 @@ const IconButton = ({
   ...props
 }) => {
   const sizeClasses = {
-    sm: "p-1 text-sm",
-    md: "p-2 text-base",
-    lg: "p-3 text-lg",
+    sm: "p-1 text-xs sm:text-sm",
+    md: "p-1.5 sm:p-2 text-sm sm:text-base",
+    lg: "p-2 sm:p-3 text-base sm:text-lg",
   };
 
   const baseClasses =
@@ -37,7 +37,7 @@ const IconButton = ({
       )}
       {...props}
     >
-      {Icon && <Icon className={twMerge("w-5 h-5", iconClassName)} />}
+      {Icon && <Icon className={twMerge("w-4 h-4 sm:w-5 sm:h-5", iconClassName)} />}
     </button>
   );
 };

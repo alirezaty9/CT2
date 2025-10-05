@@ -59,15 +59,15 @@ const PositionAndOptimization = () => {
       <ConnectionStatus icon={Move3D} />
 
       {/* Main Content Grid */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        
+      <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
+
         {/* Manipulator Section */}
-        <div className="card p-6 lg:col-span-2">
+        <div className="card p-3 sm:p-4 lg:col-span-2">
           <FormField label={t('manipulator')} icon={Move3D} showValue={false}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-3">
               {manipulatorFields.map((field) => (
                 <div key={field.name}>
-                  <label className="text-sm font-medium text-text dark:text-text mb-2 font-vazir block">
+                  <label className="text-xs sm:text-sm font-medium text-text dark:text-text mb-1 sm:mb-2 font-vazir block">
                     {field.label}
                   </label>
                   <FormInput
@@ -100,11 +100,11 @@ const PositionAndOptimization = () => {
             type="file"
             name="uploadedFile"
             onChange={handleFileUpload}
-            className="w-full p-3 border border-border rounded-lg bg-background-white dark:bg-background-secondary text-text dark:text-text outline-none focus:border-primary focus:shadow-sm focus:shadow-primary/50 transition-colors font-vazir"
+            className="w-full p-2 sm:p-3 border border-border rounded-lg bg-background-white dark:bg-background-secondary text-text dark:text-text outline-none focus:border-primary focus:shadow-sm focus:shadow-primary/50 transition-colors font-vazir text-xs sm:text-sm"
           />
           {pageData.uploadedFile && (
             <div className="mt-2">
-              <span className="text-sm text-primary dark:text-primary font-medium font-vazir">
+              <span className="text-xs sm:text-sm text-primary dark:text-primary font-medium font-vazir">
                 {t('selectedFile')}: {pageData.uploadedFile}
               </span>
             </div>

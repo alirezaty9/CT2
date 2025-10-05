@@ -15,31 +15,26 @@ const FormField = ({
   const textAlign = isRtl ? "text-right" : "text-left";
   return (
     <div
-      className={`card p-6 transition-all duration-200 hover:shadow-md ${className}`}
+      className={`card p-3 sm:p-4 transition-all duration-200 hover:shadow-md ${className}`}
     >
-      {" "}
-      <div className={`flex items-center justify-between mb-3 ${flexDir}`}>
-        {" "}
+      <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-1 sm:gap-0`}>
         <div className={`flex items-center gap-2 ${flexDir}`}>
-          {" "}
-          {Icon && <Icon className="w-5 h-5 text-primary" />}{" "}
+          {Icon && <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />}
           <label
-            className={`font-medium text-text dark:text-text font-vazir ${textAlign}`}
+            className={`font-medium text-sm sm:text-base text-text dark:text-text font-vazir ${textAlign}`}
           >
-            {" "}
-            {label}{" "}
-          </label>{" "}
-        </div>{" "}
+            {label}
+          </label>
+        </div>
         {showValue && value && (
           <span
-            className={`text-sm text-primary dark:text-primary font-medium font-vazir ${textAlign}`}
+            className={`text-xs sm:text-sm text-primary dark:text-primary font-medium font-vazir ${textAlign} flex-shrink-0`}
           >
-            {" "}
-            {value} {unit}{" "}
+            {value} {unit}
           </span>
-        )}{" "}
-      </div>{" "}
-      {children}{" "}
+        )}
+      </div>
+      {children}
     </div>
   );
 };

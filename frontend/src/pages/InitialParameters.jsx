@@ -115,8 +115,8 @@ const InitialParameters = () => {
       <ConnectionStatus icon={Zap} />
 
       {/* Quick Actions */}
-      <div className="card p-4 mb-6">
-        <div className="flex flex-wrap gap-3">
+      <div className="card p-3 sm:p-4 mb-3 sm:mb-4">
+        <div className="flex flex-wrap gap-2">
           {Object.entries({
             standard: t('presetStandard'),
             highPower: t('presetHighPower'),
@@ -125,7 +125,7 @@ const InitialParameters = () => {
             <button
               key={key}
               onClick={presetHandlers[key]}
-              className={`px-4 py-2 variant-primary rounded-lg border border-border hover:variant-primary text-sm font-medium font-vazir ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 variant-primary rounded-lg border border-border hover:variant-primary text-xs sm:text-sm font-medium font-vazir flex-shrink-0 ${
                 activeButton === key ? 'button-active no-transition' : ''
               }`}
             >
@@ -136,7 +136,7 @@ const InitialParameters = () => {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
         
         {/* Power */}
         <FormField label={t('power')} icon={Gauge} value={pageData.power} unit="W">
@@ -270,26 +270,26 @@ const InitialParameters = () => {
               icon={Power}
               disabled={!isConnected}
             />
-            <div className="flex gap-4 mt-4">
-              {[
-                { label: t('voltage'), value: pageData.tubeVoltageDisplay, unit: 'kVp' },
-                { label: t('current'), value: pageData.tubeCurrentDisplay, unit: 'mA' }
-              ].map(({ label, value, unit }) => (
-                <div key={label} className="text-center">
-                  <div className="text-sm text-text-muted dark:text-text-muted mb-1 font-vazir">
-                    {label}
-                  </div>
-                  <div className="panel px-3 py-2 rounded-lg border border-border">
-                    <span className="text-lg font-mono font-bold text-text dark:text-text">
-                      {value}
-                    </span>
-                    <span className="text-sm text-text-muted dark:text-text-muted ml-1 font-vazir">
-                      {unit}
-                    </span>
-                  </div>
+          <div className="flex gap-2 sm:gap-4 mt-3 sm:mt-4">
+            {[
+              { label: t('voltage'), value: pageData.tubeVoltageDisplay, unit: 'kVp' },
+              { label: t('current'), value: pageData.tubeCurrentDisplay, unit: 'mA' }
+            ].map(({ label, value, unit }) => (
+              <div key={label} className="text-center flex-1">
+                <div className="text-xs sm:text-sm text-text-muted dark:text-text-muted mb-1 font-vazir">
+                  {label}
                 </div>
-              ))}
-            </div>
+                <div className="panel px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-border">
+                  <span className="text-base sm:text-lg font-mono font-bold text-text dark:text-text">
+                    {value}
+                  </span>
+                  <span className="text-xs sm:text-sm text-text-muted dark:text-text-muted ml-1 font-vazir">
+                    {unit}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
           </FormField>
         </div>
 

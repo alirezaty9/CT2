@@ -66,11 +66,11 @@ const LanguageButton = ({ lng, current, onClick }) => (
 
 // پنل پایین (وضعیت سیستم و دوربین)
 const BottomPanels = ({ t }) => (
-  <div className="h-40 md:h-44 flex gap-4 py-1 px-4 pt-0">
-    <div className="panel flex-1 flex items-center justify-center text-sm dark:text-text">
+  <div className="flex-shrink-0 flex flex-col sm:flex-row gap-2 py-2 px-2 sm:px-4">
+    <div className="panel flex-1 flex items-center justify-center text-xs sm:text-sm dark:text-text min-h-[40px] sm:min-h-[50px] md:min-h-[60px] lg:min-h-[70px]">
       {t("systemStatus")}
     </div>
-    <div className="card h-40 md:h-44 border border-black">
+    <div className="card border border-black flex-shrink-0 w-full sm:w-auto h-[60px] sm:h-[70px] md:h-[90px] lg:h-[110px]">
       <MonitoringDisplay />
     </div>
   </div>
@@ -100,15 +100,17 @@ const Layout = () => {
   );
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen max-h-screen gap-4 p-4 bg-background dark:bg-background overflow-hidden">
-      {/* ستون چپ - 2/3 عرض */}
-      <div className="w-full md:w-5/12 flex flex-col gap-4 min-h-0">
+    <div className="responsive-layout gap-2 sm:gap-4 p-2 sm:p-4 bg-background dark:bg-background">
+      {/* ستون چپ - در موبایل کامل عرض، در دسکتاپ 2/5 */}
+      <div className="mobile-column">
         <div className="card flex-1 flex flex-col min-h-0">
           {/* نوار بالا - ارتفاع ثابت */}
-          <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-border bg-background-secondary dark:bg-background-secondary dark:border-border rounded-t-xl">
-            <TabNav
-              tabs={tabs.map((tab) => ({ ...tab, label: t(tab.label) }))}
-            />
+          <div className="flex-shrink-0 flex flex-col sm:flex-row items-start sm:items-center justify-between px-2 sm:px-4 py-2 sm:py-3 border-b border-border bg-background-secondary dark:bg-background-secondary dark:border-border rounded-t-xl gap-2 sm:gap-0">
+            <div className="w-full sm:w-auto">
+              <TabNav
+                tabs={tabs.map((tab) => ({ ...tab, label: t(tab.label) }))}
+              />
+            </div>
             <div className="flex gap-2 items-center">
               <Link to="/settings">
                 <IconButton
@@ -123,64 +125,76 @@ const Layout = () => {
           </div>
 
           {/* محتوای مرکزی - flex-1 برای باقی فضا */}
-          <div className="flex-1 min-h-0 px-6 py-4">
-            <div className="h-full overflow-auto rounded-md">
+          <div className="flex-1 min-h-0 px-2 sm:px-4 lg:px-6 py-2 sm:py-3 lg:py-4 overflow-auto">
+            <div className="h-full">
               <Outlet />
             </div>
           </div>
 
           {/* وضعیت سیستم / دوربین - ارتفاع ثابت */}
-          <div className="flex-shrink-0">
-            <BottomPanels t={t} />
-          </div>
+          <BottomPanels t={t} />
         </div>
       </div>
 
-      {/* ستون راست - 1/3 عرض */}
-      <div className="w-full md:w-7/12 flex flex-col gap-4 min-h-0">
+      {/* ستون راست - در موبایل کامل عرض، در دسکتاپ 3/5 */}
+      <div className="desktop-column">
         {/* بخش بالا - تصویر باسلر */}
-        <div className="flex-1 flex flex-col gap-0 min-h-0">
-          <div className="card flex-1 rounded-b-none border-b-0 relative overflow-hidden flex min-h-0">
-            <BaslerTools />
-            <div className="flex-1 min-h-0">
-              <BaslerDisplay />
+        <div className="flex-1 flex flex-col min-h-0 gap-0">
+          <div className="card flex-1 rounded-b-none border-b-0 relative overflow-hidden flex flex-col sm:flex-row min-h-[300px] sm:min-h-[400px] md:min-h-[450px] lg:min-h-[500px]">
+            <div className="hidden sm:block flex-shrink-0">
+              <BaslerTools />
             </div>
-            <LayerManager className="flex-shrink-0" />
+            <div className="flex-1 min-h-0 min-w-0 relative">
+              <BaslerDisplay />
+              {/* Mobile Tools Overlay */}
+              <div className="sm:hidden absolute top-2 left-2 z-10">
+                <div className="bg-black/70 rounded-lg p-1">
+                  <div className="transform scale-75 origin-top-left">
+                    <BaslerTools />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="hidden lg:block flex-shrink-0">
+              <LayerManager className="flex-shrink-0" />
+            </div>
           </div>
           {/* Image Reel - ارتفاع ثابت */}
-          <div className="card flex-shrink-0 rounded-t-none border-t-0 text-text dark:text-text font-medium text-center p-4">
+          <div className="card flex-shrink-0 rounded-t-none border-t-0 text-text dark:text-text font-medium text-center p-2 sm:p-3 text-xs sm:text-sm min-h-[40px] sm:min-h-[50px] md:min-h-[60px] lg:min-h-[70px] flex items-center justify-center">
             {t("imageReel")}
           </div>
         </div>
 
-        {/* Analysis Panel - ارتفاع ثابت */}
-        <div className="card flex-shrink-0 h-40 md:h-44 p-4">
+        {/* Analysis Panel - ارتفاع بهبود یافته */}
+        <div className="card flex-shrink-0 p-2 sm:p-3 min-h-[180px] sm:min-h-[200px] md:min-h-[220px] lg:min-h-[240px] max-h-[240px] sm:max-h-[280px] md:max-h-[320px] lg:max-h-[360px] flex flex-col">
           {/* Tab Switcher */}
-          <div className="flex gap-2 mb-2">
+          <div className="flex gap-1 sm:gap-2 mb-2 sm:mb-3 flex-shrink-0">
             <button
               onClick={() => setAnalysisView('histogram')}
-              className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+              className={`px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-semibold rounded-lg transition-all flex items-center gap-1 flex-shrink-0 ${
                 analysisView === 'histogram'
                   ? 'bg-gradient-to-r from-primary to-primary-dark text-white shadow-md'
                   : 'bg-background-secondary dark:bg-background-primary text-text hover:bg-accent border border-border'
               }`}
             >
-              Histogram
+              <span className="hidden sm:inline">📊 Histogram</span>
+              <span className="sm:hidden">📊 Hist</span>
             </button>
             <button
               onClick={() => setAnalysisView('intensity')}
-              className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+              className={`px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-semibold rounded-lg transition-all flex items-center gap-1 flex-shrink-0 ${
                 analysisView === 'intensity'
                   ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md'
                   : 'bg-background-secondary dark:bg-background-primary text-text hover:bg-accent border border-border'
               }`}
             >
-              Intensity Profile
+              <span className="hidden sm:inline">📈 Intensity Profile</span>
+              <span className="sm:hidden">📈 Intensity</span>
             </button>
           </div>
 
           {/* Display Content */}
-          <div className="h-[calc(100%-2.5rem)]">
+          <div className="flex-1 min-h-0 overflow-hidden rounded-lg bg-background-secondary dark:bg-background-primary border border-border p-2">
             {analysisView === 'histogram' ? <HistogramDisplay /> : <IntensityProfileDisplay />}
           </div>
         </div>

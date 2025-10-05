@@ -494,119 +494,119 @@ const CropTool = forwardRef(({ canvas, isActive }, ref) => {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="w-80 bg-background-white dark:bg-background-secondary rounded-2xl shadow-2xl border border-border p-6"
+      className="w-72 sm:w-80 bg-background-white dark:bg-background-secondary rounded-2xl shadow-2xl border border-border p-4 sm:p-6"
     >
       {!showPanel && !cropMode ? (
         // Minimal view
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-md">
-              <Crop size={20} />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-md">
+              <Crop size={16} className="sm:w-5 sm:h-5" />
             </div>
-            <span className="text-base font-semibold text-text">Crop Tool</span>
+            <span className="text-sm sm:text-base font-semibold text-text">Crop Tool</span>
           </div>
           <motion.button
             onClick={() => setShowPanel(true)}
-            className="px-4 py-2 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl hover:from-primary-dark hover:to-primary transition-all duration-300 shadow-md hover:shadow-lg shadow-primary/30 text-sm font-semibold"
+            className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl hover:from-primary-dark hover:to-primary transition-all duration-300 shadow-md hover:shadow-lg shadow-primary/30 text-xs sm:text-sm font-semibold"
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
           >
-            <Settings size={16} />
+            <Settings size={14} className="sm:w-4 sm:h-4" />
           </motion.button>
         </div>
       ) : cropMode ? (
         // Crop mode active
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+        <div className="space-y-3 sm:space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+            <div className="flex items-center gap-2 sm:gap-3">
               <motion.div
-                className="p-2 rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md"
+                className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md"
                 animate={{ scale: [1, 1.05, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                <Crop size={20} />
+                <Crop size={16} className="sm:w-5 sm:h-5" />
               </motion.div>
-              <span className="text-base font-semibold text-primary">Crop Active</span>
+              <span className="text-sm sm:text-base font-semibold text-primary">Crop Active</span>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-1 sm:gap-2">
               {canUndo && (
                 <motion.button
                   onClick={undoCrop}
-                  className="p-2.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-orange-500/30"
+                  className="p-2 sm:p-2.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-orange-500/30"
                   whileHover={{ scale: 1.1, y: -2 }}
                   whileTap={{ scale: 0.95 }}
                   title="Undo Last Crop"
                 >
-                  <Undo2 size={16} />
+                  <Undo2 size={14} className="sm:w-4 sm:h-4" />
                 </motion.button>
               )}
               <motion.button
                 onClick={applyCrop}
-                className="p-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-green-500/30"
+                className="p-2 sm:p-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-green-500/30"
                 whileHover={{ scale: 1.1, y: -2 }}
                 whileTap={{ scale: 0.95 }}
                 title="Apply Crop"
               >
-                <Check size={16} />
+                <Check size={14} className="sm:w-4 sm:h-4" />
               </motion.button>
               <motion.button
                 onClick={cancelCropMode}
-                className="p-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-red-500/30"
+                className="p-2 sm:p-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-red-500/30"
                 whileHover={{ scale: 1.1, y: -2 }}
                 whileTap={{ scale: 0.95 }}
                 title="Cancel"
               >
-                <X size={16} />
+                <X size={14} className="sm:w-4 sm:h-4" />
               </motion.button>
             </div>
           </div>
 
-          <div className="p-4 bg-accent dark:bg-background-primary rounded-xl border border-border">
-            <p className="text-sm text-text leading-relaxed">
+          <div className="p-3 sm:p-4 bg-accent dark:bg-background-primary rounded-xl border border-border">
+            <p className="text-xs sm:text-sm text-text leading-relaxed">
               🎯 Click and drag to draw crop area, then adjust as needed. Click ✓ to apply or ✕ to cancel.
             </p>
           </div>
         </div>
       ) : (
         // Full settings panel
-        <div className="space-y-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-md">
-                <Crop size={20} />
+        <div className="space-y-4 sm:space-y-5">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-md">
+                <Crop size={16} className="sm:w-5 sm:h-5" />
               </div>
-              <span className="text-base font-semibold text-text">Crop Settings</span>
+              <span className="text-sm sm:text-base font-semibold text-text">Crop Settings</span>
             </div>
             <motion.button
               onClick={() => setShowPanel(false)}
-              className="p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all duration-300 shadow-sm hover:shadow-md"
+              className="p-1.5 sm:p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all duration-300 shadow-sm hover:shadow-md"
               whileHover={{ scale: 1.1, y: -2 }}
               whileTap={{ scale: 0.95 }}
             >
-              <X size={16} />
+              <X size={14} className="sm:w-4 sm:h-4" />
             </motion.button>
           </div>
 
           {/* Main Actions */}
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             <motion.button
               onClick={startCropMode}
-              className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl hover:from-primary-dark hover:to-primary transition-all duration-300 shadow-md hover:shadow-lg shadow-primary/30 font-semibold"
+              className="w-full flex items-center justify-center gap-2 sm:gap-3 py-2 sm:py-3 px-3 sm:px-4 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl hover:from-primary-dark hover:to-primary transition-all duration-300 shadow-md hover:shadow-lg shadow-primary/30 text-sm sm:text-base font-semibold"
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
             >
-              <Crop size={18} />
+              <Crop size={16} className="sm:w-4 sm:h-5" />
               <span>Start Crop</span>
             </motion.button>
 
             {canUndo && (
               <motion.button
                 onClick={undoCrop}
-                className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-orange-500/30 font-semibold"
+                className="w-full flex items-center justify-center gap-2 sm:gap-3 py-2 sm:py-3 px-3 sm:px-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-orange-500/30 text-sm sm:text-base font-semibold"
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <Undo2 size={18} />
+                <Undo2 size={16} className="sm:w-4 sm:h-5" />
                 <span>Undo Last Crop</span>
               </motion.button>
             )}

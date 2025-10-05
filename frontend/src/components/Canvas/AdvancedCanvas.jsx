@@ -179,9 +179,9 @@ const AdvancedCanvas = ({
   return (
     <div className={`flex flex-col bg-gray-50 ${className}`}>
       {/* نوار ابزار بالا */}
-      <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 sm:p-4 bg-white border-b border-gray-200 shadow-sm gap-2 sm:gap-0">
         {/* ابزارهای اصلی */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto scrollbar-hide w-full sm:w-auto">
           {tools.map((tool) => {
             const IconComponent = tool.icon;
             return (
@@ -189,7 +189,7 @@ const AdvancedCanvas = ({
                 key={tool.id}
                 onClick={() => handleToolChange(tool.id)}
                 className={`
-                  flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200
+                  flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg transition-all duration-200 flex-shrink-0
                   ${currentTool === tool.id 
                     ? 'bg-blue-500 text-white shadow-md' 
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -197,92 +197,96 @@ const AdvancedCanvas = ({
                 `}
                 title={tool.label}
               >
-                <IconComponent size={20} />
+                <IconComponent size={16} className="sm:w-5 sm:h-5" />
               </button>
             );
           })}
         </div>
 
         {/* ابزارهای عملیاتی */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleUndo}
-            className="flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
-            title="بازگشت"
-          >
-            <Undo size={20} />
-          </button>
+        <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto justify-between sm:justify-end">
+          <div className="flex items-center gap-1 sm:gap-2">
+            <button
+              onClick={handleUndo}
+              className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+              title="بازگشت"
+            >
+              <Undo size={16} className="sm:w-5 sm:h-5" />
+            </button>
+            
+            <button
+              onClick={handleDelete}
+              className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+              title="حذف انتخاب شده"
+            >
+              <Trash2 size={16} className="sm:w-5 sm:h-5" />
+            </button>
+          </div>
           
-          <button
-            onClick={handleDelete}
-            className="flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
-            title="حذف انتخاب شده"
-          >
-            <Trash2 size={20} />
-          </button>
+          <div className="hidden sm:block w-px h-6 bg-gray-300"></div>
           
-          <div className="w-px h-6 bg-gray-300 mx-2"></div>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <button
+              onClick={handleZoomOut}
+              className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+              title="کوچک کردن"
+            >
+              <ZoomOut size={16} className="sm:w-5 sm:h-5" />
+            </button>
+            
+            <span className="text-xs sm:text-sm text-gray-600 min-w-[50px] sm:min-w-[60px] text-center">
+              {Math.round(zoom * 100)}%
+            </span>
+            
+            <button
+              onClick={handleZoomIn}
+              className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+              title="بزرگ کردن"
+            >
+              <ZoomIn size={16} className="sm:w-5 sm:h-5" />
+            </button>
+          </div>
           
-          <button
-            onClick={handleZoomOut}
-            className="flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
-            title="کوچک کردن"
-          >
-            <ZoomOut size={20} />
-          </button>
-          
-          <span className="text-sm text-gray-600 min-w-[60px] text-center">
-            {Math.round(zoom * 100)}%
-          </span>
-          
-          <button
-            onClick={handleZoomIn}
-            className="flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
-            title="بزرگ کردن"
-          >
-            <ZoomIn size={20} />
-          </button>
-          
-          <div className="w-px h-6 bg-gray-300 mx-2"></div>
+          <div className="hidden sm:block w-px h-6 bg-gray-300"></div>
           
           <button
             onClick={handleDownload}
-            className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-100 text-green-600 hover:bg-green-200 transition-colors"
+            className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-green-100 text-green-600 hover:bg-green-200 transition-colors"
             title="دانلود"
           >
-            <Download size={20} />
+            <Download size={16} className="sm:w-5 sm:h-5" />
           </button>
         </div>
       </div>
 
       {/* تنظیمات برس */}
       {currentTool === 'brush' && (
-        <div className="flex items-center gap-4 p-3 bg-white border-b border-gray-200">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 p-2 sm:p-3 bg-white border-b border-gray-200">
           <div className="flex items-center gap-2">
-            <Palette size={16} className="text-gray-600" />
+            <Palette size={14} className="text-gray-600 sm:w-4 sm:h-4" />
             <input
               type="color"
               value={brushSettings.color}
               onChange={(e) => handleBrushSettingChange('color', e.target.value)}
-              className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
+              className="w-6 h-6 sm:w-8 sm:h-8 rounded border border-gray-300 cursor-pointer"
             />
           </div>
           
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">ضخامت:</span>
+            <span className="text-xs sm:text-sm text-gray-600">ضخامت:</span>
             <input
               type="range"
               min="1"
               max="50"
               value={brushSettings.width}
               onChange={(e) => handleBrushSettingChange('width', parseInt(e.target.value))}
-              className="w-24"
+              className="w-16 sm:w-24"
             />
-            <span className="text-sm text-gray-600 min-w-[30px]">{brushSettings.width}</span>
+            <span className="text-xs sm:text-sm text-gray-600 min-w-[25px] sm:min-w-[30px]">{brushSettings.width}</span>
           </div>
           
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">شفافیت:</span>
+            <span className="text-xs sm:text-sm text-gray-600">شفافیت:</span>
             <input
               type="range"
               min="0"
@@ -290,32 +294,32 @@ const AdvancedCanvas = ({
               step="0.1"
               value={brushSettings.opacity}
               onChange={(e) => handleBrushSettingChange('opacity', parseFloat(e.target.value))}
-              className="w-24"
+              className="w-16 sm:w-24"
             />
-            <span className="text-sm text-gray-600 min-w-[30px]">{Math.round(brushSettings.opacity * 100)}%</span>
+            <span className="text-xs sm:text-sm text-gray-600 min-w-[25px] sm:min-w-[30px]">{Math.round(brushSettings.opacity * 100)}%</span>
           </div>
           
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">سایه:</span>
+            <span className="text-xs sm:text-sm text-gray-600">سایه:</span>
             <input
               type="range"
               min="0"
               max="20"
               value={brushSettings.shadowBlur}
               onChange={(e) => handleBrushSettingChange('shadowBlur', parseInt(e.target.value))}
-              className="w-24"
+              className="w-16 sm:w-24"
             />
-            <span className="text-sm text-gray-600 min-w-[30px]">{brushSettings.shadowBlur}</span>
+            <span className="text-xs sm:text-sm text-gray-600 min-w-[25px] sm:min-w-[30px]">{brushSettings.shadowBlur}</span>
           </div>
         </div>
       )}
 
       {/* ناحیه canvas */}
-      <div className="flex-1 flex items-center justify-center p-4 overflow-auto">
-        <div className="relative bg-white rounded-lg shadow-lg flex justify-center items-center">
+      <div className="flex-1 flex items-center justify-center p-2 sm:p-4 overflow-auto">
+        <div className="relative bg-white rounded-lg shadow-lg flex justify-center items-center w-full h-full min-h-[200px] sm:min-h-[300px]">
           <canvas
             ref={canvasRef}
-            className="border border-gray-300 rounded-lg"
+            className="border border-gray-300 rounded-lg max-w-full max-h-full object-contain"
           />
         </div>
       </div>

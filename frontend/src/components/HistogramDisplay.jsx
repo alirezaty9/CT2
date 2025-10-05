@@ -54,11 +54,11 @@ const HistogramDisplay = () => {
   }
 
   return (
-    <div className="h-full flex gap-2">
-      {/* Left side - Info */}
-      <div className="flex flex-col gap-2 justify-center" style={{ minWidth: '180px', maxWidth: '180px' }}>
+    <div className="h-full flex flex-col gap-2 overflow-hidden">
+      {/* Top - Controls and Info - Horizontal Layout */}
+      <div className="flex flex-wrap gap-2 flex-shrink-0">
         {/* Selected Point or Area Info */}
-        <div className="bg-accent dark:bg-background-primary rounded-lg px-2 py-1 border border-border">
+        <div className="bg-accent dark:bg-background-primary rounded-lg px-2 py-1 border border-border flex-shrink-0">
           {selectionRegion?.type === 'point' && (
             <>
               <div className="text-xs text-text-muted">Point (R={selectionRegion.radius}px)</div>
@@ -94,20 +94,20 @@ const HistogramDisplay = () => {
         </div>
 
         {/* Pixel Values */}
-        <div className="grid grid-cols-3 gap-1">
-          <div className="text-center bg-red-100 dark:bg-red-900/20 rounded-lg px-1 py-1">
+        <div className="flex gap-1 flex-shrink-0">
+          <div className="text-center bg-red-100 dark:bg-red-900/20 rounded-lg px-2 py-1">
             <div className="text-xs text-text-muted">R</div>
             <div className="font-mono text-xs font-semibold text-red-700 dark:text-red-400">
               {selectedPoint.pixel.r}
             </div>
           </div>
-          <div className="text-center bg-green-100 dark:bg-green-900/20 rounded-lg px-1 py-1">
+          <div className="text-center bg-green-100 dark:bg-green-900/20 rounded-lg px-2 py-1">
             <div className="text-xs text-text-muted">G</div>
             <div className="font-mono text-xs font-semibold text-green-700 dark:text-green-400">
               {selectedPoint.pixel.g}
             </div>
           </div>
-          <div className="text-center bg-blue-100 dark:bg-blue-900/20 rounded-lg px-1 py-1">
+          <div className="text-center bg-blue-100 dark:bg-blue-900/20 rounded-lg px-2 py-1">
             <div className="text-xs text-text-muted">B</div>
             <div className="font-mono text-xs font-semibold text-blue-700 dark:text-blue-400">
               {selectedPoint.pixel.b}
@@ -116,17 +116,17 @@ const HistogramDisplay = () => {
         </div>
 
         {/* Channel Selector */}
-        <div className="grid grid-cols-2 gap-1">
+        <div className="flex gap-1 flex-shrink-0 flex-wrap">
           {[
-            { key: 'red', label: 'Red', color: 'from-red-500 to-red-600' },
-            { key: 'green', label: 'Grn', color: 'from-green-500 to-green-600' },
-            { key: 'blue', label: 'Blue', color: 'from-blue-500 to-blue-600' },
+            { key: 'red', label: 'R', color: 'from-red-500 to-red-600' },
+            { key: 'green', label: 'G', color: 'from-green-500 to-green-600' },
+            { key: 'blue', label: 'B', color: 'from-blue-500 to-blue-600' },
             { key: 'gray', label: 'Gray', color: 'from-gray-500 to-gray-600' }
           ].map(({ key, label, color }) => (
             <motion.button
               key={key}
               onClick={() => changeChannel(key)}
-              className={`px-2 py-1 text-xs font-semibold rounded-lg transition-all duration-300 ${
+              className={`px-2 py-1 text-xs font-semibold rounded-lg transition-all duration-300 flex-shrink-0 ${
                 currentChannel === key
                   ? `bg-gradient-to-r ${color} text-white shadow-md`
                   : 'bg-background-secondary dark:bg-background-primary text-text hover:bg-accent border border-border'
@@ -140,13 +140,13 @@ const HistogramDisplay = () => {
         </div>
       </div>
 
-      {/* Right side - Histogram Chart */}
-      <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg border border-border">
+      {/* Bottom - Histogram Chart */}
+      <div className="flex-1 min-h-0 bg-white dark:bg-gray-800 rounded-lg border border-border overflow-hidden">
         <canvas
           ref={canvasRef}
           width={1024}
           height={128}
-          className="w-full h-full"
+          className="w-full h-full object-contain"
         />
       </div>
     </div>

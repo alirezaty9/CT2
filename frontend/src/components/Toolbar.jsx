@@ -235,44 +235,45 @@ const Toolbar = ({ className = "" }) => {
     <motion.div
       className={twMerge(
         "bg-background-secondary h-full flex flex-col border-r border-border rounded-l-xl shadow-card dark:bg-background-secondary dark:border-border relative",
-        isExpanded ? "w-64" : "w-16",
+        isExpanded ? "w-48 sm:w-64" : "w-12 sm:w-16",
         className
       )}
-      animate={{ width: isExpanded ? 256 : 64 }}
+      animate={{ width: isExpanded ? (window.innerWidth < 640 ? 192 : 256) : (window.innerWidth < 640 ? 48 : 64) }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b border-border">
+      <div className="flex items-center justify-between p-2 sm:p-3 border-b border-border">
         <AnimatePresence>
           {isExpanded && (
             <motion.h3
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="text-sm font-semibold text-text"
+              className="text-xs sm:text-sm font-semibold text-text"
             >
-              ابزارها
+              <span className="hidden sm:inline">ابزارها</span>
+              <span className="sm:hidden">Tools</span>
             </motion.h3>
           )}
         </AnimatePresence>
 
         <motion.button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="p-2 rounded-lg bg-background-primary hover:bg-accent border border-border hover:border-primary transition-all duration-300 shadow-sm hover:shadow-md"
+          className="p-1.5 sm:p-2 rounded-lg bg-background-primary hover:bg-accent border border-border hover:border-primary transition-all duration-300 shadow-sm hover:shadow-md"
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
         >
-          {isExpanded ? <ChevronLeft size={16} className="text-primary" /> : <ChevronRight size={16} className="text-primary" />}
+          {isExpanded ? <ChevronLeft size={14} className="text-primary sm:w-4 sm:h-4" /> : <ChevronRight size={14} className="text-primary sm:w-4 sm:h-4" />}
         </motion.button>
       </div>
 
       {/* Tools */}
-      <div className="flex-1 py-4 overflow-y-auto scrollbar-hide">
+      <div className="flex-1 py-2 sm:py-4 overflow-y-auto scrollbar-hide">
         <div
           className={`flex ${
             isExpanded
-              ? "flex-col gap-2 px-3"
-              : "flex-col items-center gap-4 px-2"
+              ? "flex-col gap-1 sm:gap-2 px-2 sm:px-3"
+              : "flex-col items-center gap-2 sm:gap-4 px-1 sm:px-2"
           }`}
         >
           {tools.map(({ Icon, name, hotkey, category }, index) => {
@@ -289,7 +290,7 @@ const Toolbar = ({ className = "" }) => {
                   <motion.button
                     onClick={() => handleToolClick(name)}
                     className={twMerge(
-                      "w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-300 group font-medium shadow-sm hover:shadow-md",
+                      "w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl transition-all duration-300 group font-medium shadow-sm hover:shadow-md",
                       isActive
                         ? "bg-gradient-to-r from-primary to-primary-dark text-white shadow-lg shadow-primary/30"
                         : "bg-background-primary hover:bg-accent text-text hover:text-primary border border-border hover:border-primary"
@@ -297,9 +298,9 @@ const Toolbar = ({ className = "" }) => {
                     whileHover={{ scale: 1.03, y: -2 }}
                     whileTap={{ scale: 0.97 }}
                   >
-                    <Icon size={20} className={isActive ? "drop-shadow-md" : ""} />
-                    <div className="flex-1 text-left">
-                      <div className="text-sm font-semibold">{t(name)}</div>
+                    <Icon size={16} className={twMerge(isActive ? "drop-shadow-md" : "", "sm:w-5 sm:h-5")} />
+                    <div className="flex-1 text-left min-w-0">
+                      <div className="text-xs sm:text-sm font-semibold truncate">{t(name)}</div>
                       <div className={twMerge(
                         "text-xs font-mono",
                         isActive ? "opacity-80" : "opacity-50"
@@ -308,7 +309,7 @@ const Toolbar = ({ className = "" }) => {
                     {isActive && (
                       <motion.div
                         layoutId="activeIndicator"
-                        className="w-2.5 h-2.5 bg-white rounded-full shadow-md"
+                        className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-white rounded-full shadow-md flex-shrink-0"
                         animate={{ scale: [1, 1.2, 1] }}
                         transition={{ duration: 0.5, repeat: Infinity }}
                       />
@@ -319,7 +320,7 @@ const Toolbar = ({ className = "" }) => {
                     <motion.button
                       onClick={() => handleToolClick(name)}
                       className={twMerge(
-                        "p-2.5 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md",
+                        "p-1.5 sm:p-2.5 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md",
                         isActive
                           ? "bg-gradient-to-br from-primary to-primary-dark text-white shadow-lg shadow-primary/30"
                           : "bg-background-primary hover:bg-accent text-text-muted hover:text-primary border border-border hover:border-primary"
@@ -328,12 +329,12 @@ const Toolbar = ({ className = "" }) => {
                       whileTap={{ scale: 0.95 }}
                       title={`${t(name)} (${hotkey})`}
                     >
-                      <Icon size={20} className={isActive ? "drop-shadow-md" : ""} />
+                      <Icon size={16} className={twMerge(isActive ? "drop-shadow-md" : "", "sm:w-5 sm:h-5")} />
                     </motion.button>
                     {isActive && (
                       <motion.div
                         layoutId="compactActiveIndicator"
-                        className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-1.5 h-8 bg-gradient-to-b from-primary to-primary-dark rounded-full shadow-md"
+                        className="absolute -right-0.5 sm:-right-1 top-1/2 transform -translate-y-1/2 w-1 h-6 sm:h-8 bg-gradient-to-b from-primary to-primary-dark rounded-full shadow-md"
                         initial={{ opacity: 0, x: -5 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -5 }}
@@ -354,19 +355,19 @@ const Toolbar = ({ className = "" }) => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="border-t border-border p-3 space-y-3"
+            className="border-t border-border p-2 sm:p-3 space-y-2 sm:space-y-3"
           >
             {/* Color Picker Button */}
             <motion.button
               onClick={() => setShowColorPicker(!showColorPicker)}
-              className="w-full flex items-center gap-3 p-3 rounded-xl bg-background-primary hover:bg-accent border border-border hover:border-primary transition-all duration-300 shadow-sm hover:shadow-md"
+              className="w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl bg-background-primary hover:bg-accent border border-border hover:border-primary transition-all duration-300 shadow-sm hover:shadow-md"
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
             >
-              <Palette size={18} className="text-primary" />
-              <span className="text-sm font-medium">انتخاب رنگ</span>
+              <Palette size={16} className="text-primary sm:w-4 sm:h-5" />
+              <span className="text-xs sm:text-sm font-medium">انتخاب رنگ</span>
               <div
-                className="ml-auto w-5 h-5 rounded-lg border-2 border-white shadow-md ring-2 ring-border"
+                className="ml-auto w-4 h-4 sm:w-5 sm:h-5 rounded-lg border-2 border-white shadow-md ring-2 ring-border flex-shrink-0"
                 style={{ backgroundColor: selectedColor }}
               />
             </motion.button>
@@ -374,33 +375,33 @@ const Toolbar = ({ className = "" }) => {
             {/* Settings Button */}
             <motion.button
               onClick={() => setShowSettings(!showSettings)}
-              className="w-full flex items-center gap-3 p-3 rounded-xl bg-background-primary hover:bg-accent border border-border hover:border-primary transition-all duration-300 shadow-sm hover:shadow-md"
+              className="w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl bg-background-primary hover:bg-accent border border-border hover:border-primary transition-all duration-300 shadow-sm hover:shadow-md"
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
             >
-              <Settings size={18} className="text-primary" />
-              <span className="text-sm font-medium">تنظیمات</span>
+              <Settings size={16} className="text-primary sm:w-4 sm:h-5" />
+              <span className="text-xs sm:text-sm font-medium">تنظیمات</span>
             </motion.button>
 
             {/* Quick Actions */}
-            <div className="flex gap-2">
+            <div className="flex gap-1 sm:gap-2">
               <motion.button
                 onClick={handleSave}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-green-500/30 font-medium"
+                className="flex-1 flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-green-500/30 font-medium"
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <Save size={16} />
+                <Save size={14} className="sm:w-4 sm:h-4" />
                 <span className="text-xs font-semibold">ذخیره</span>
               </motion.button>
 
               <motion.button
                 onClick={clearDrawings}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-red-500/30 font-medium"
+                className="flex-1 flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-red-500/30 font-medium"
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <X size={16} />
+                <X size={14} className="sm:w-4 sm:h-4" />
                 <span className="text-xs font-semibold">پاک</span>
               </motion.button>
             </div>
