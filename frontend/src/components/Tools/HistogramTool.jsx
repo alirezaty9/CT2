@@ -554,24 +554,27 @@ const HistogramTool = ({ canvas, isActive, onClose }) => {
             </div>
             <div className="flex items-center gap-2">
               <motion.button
-                onClick={() => setShowPanel(true)}
-                className="p-1.5 sm:p-2 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl hover:from-primary-dark hover:to-primary shadow-md hover:shadow-lg shadow-primary/30"
+                onClick={() => {
+                  setShowPanel(true);
+                  setIsSelecting(false);
+                }}
+                className="p-2 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl hover:from-primary-dark hover:to-primary shadow-md hover:shadow-lg shadow-primary/30"
                 style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
                 whileHover={{ scale: 1.1, y: -2 }}
                 whileTap={{ scale: 0.93 }}
                 title="Settings"
               >
-                <Settings size={14} className="sm:w-4 sm:h-4" />
+                <Settings size={16} />
               </motion.button>
               <motion.button
                 onClick={onClose}
-                className="p-1.5 sm:p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 shadow-sm hover:shadow-md"
+                className="p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 shadow-sm hover:shadow-md"
                 style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
                 whileHover={{ scale: 1.1, y: -2 }}
                 whileTap={{ scale: 0.93 }}
                 title="Close Tool"
               >
-                <X size={14} className="sm:w-4 sm:h-4" />
+                <X size={16} />
               </motion.button>
             </div>
           </div>
@@ -586,16 +589,31 @@ const HistogramTool = ({ canvas, isActive, onClose }) => {
               </div>
               <span className="text-base font-semibold text-text">Histogram Tool</span>
             </div>
-            <motion.button
-              onClick={onClose}
-              className="p-1.5 sm:p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 shadow-sm hover:shadow-md"
-              style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
-              whileHover={{ scale: 1.1, y: -2 }}
-              whileTap={{ scale: 0.93 }}
-              title="Close Tool"
-            >
-              <X size={14} className="sm:w-4 sm:h-4" />
-            </motion.button>
+            <div className="flex items-center gap-2">
+              <motion.button
+                onClick={() => {
+                  setShowPanel(true);
+                  setIsSelecting(false);
+                }}
+                className="p-1.5 sm:p-2 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl hover:from-primary-dark hover:to-primary shadow-md hover:shadow-lg shadow-primary/30"
+                style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                whileHover={{ scale: 1.1, y: -2 }}
+                whileTap={{ scale: 0.93 }}
+                title="Settings"
+              >
+                <Settings size={16} className="sm:w-5 sm:h-5" />
+              </motion.button>
+              <motion.button
+                onClick={onClose}
+                className="p-1.5 sm:p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 shadow-sm hover:shadow-md"
+                style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                whileHover={{ scale: 1.1, y: -2 }}
+                whileTap={{ scale: 0.93 }}
+                title="Close Tool"
+              >
+                <X size={14} className="sm:w-4 sm:h-4" />
+              </motion.button>
+            </div>
           </div>
           <motion.div
             animate={{ scale: [1, 1.05, 1] }}

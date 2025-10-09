@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { twMerge } from "tailwind-merge";
 import {
@@ -9,6 +9,7 @@ import {
   Wrench,
   Settings,
   Sparkles,
+  ChevronDown,
 } from "lucide-react";
 import BaslerTools from "./Toolbar";
 import TabNav from "./TabNav";
@@ -85,6 +86,8 @@ const Layout = () => {
 
   const [activeButton, setActiveButton] = useState(defaultActive);
   const [analysisView, setAnalysisView] = useState('histogram'); // 'histogram' or 'intensity'
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsRef = useRef(null);
   const { t, i18n } = useTranslation();
 
   const handleButtonClick = useCallback((name) => {
@@ -99,6 +102,18 @@ const Layout = () => {
     [i18n]
   );
 
+  // Close settings dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (settingsRef.current && !settingsRef.current.contains(event.target)) {
+        setSettingsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
     <div className="responsive-layout gap-2 sm:gap-4 p-2 sm:p-4 bg-background dark:bg-background">
       {/* ستون چپ - در موبایل کامل عرض، در دسکتاپ 2/5 */}
@@ -111,16 +126,45 @@ const Layout = () => {
                 tabs={tabs.map((tab) => ({ ...tab, label: t(tab.label) }))}
               />
             </div>
-            <div className="flex gap-2 items-center">
-              <Link to="/settings">
-                <IconButton
-                  Icon={Settings}
-                  title={t("settings")}
-                  variant={activeButton === "Settings" ? "primary" : "default"}
-                  size="md"
-                  onClick={() => handleButtonClick("Settings")}
-                />
-              </Link>
+            <div className="flex gap-2 items-center relative" ref={settingsRef}>
+              <button
+                onClick={() => setSettingsOpen(!settingsOpen)}
+                className={twMerge(
+                  "flex items-center gap-1 px-3 py-2 rounded-lg transition-all",
+                  settingsOpen || activeButton === "Settings"
+                    ? "bg-primary text-white"
+                    : "bg-background-secondary text-text hover:bg-accent border border-border"
+                )}
+              >
+                <Settings className="w-4 h-4" />
+                <ChevronDown className={twMerge(
+                  "w-4 h-4 transition-transform",
+                  settingsOpen && "rotate-180"
+                )} />
+              </button>
+
+              {/* Dropdown Menu */}
+              {settingsOpen && (
+                <div className="absolute top-full right-0 mt-2 w-48 bg-background-secondary dark:bg-background-primary border border-border rounded-lg shadow-lg z-50 overflow-hidden">
+                  <Link
+                    to="/settings"
+                    onClick={() => {
+                      setSettingsOpen(false);
+                      handleButtonClick("Settings");
+                    }}
+                    className="block px-4 py-2 hover:bg-accent text-text transition-colors"
+                  >
+                    {t("settings")}
+                  </Link>
+                  <div className="border-t border-border px-4 py-2">
+                    <div className="text-xs text-text-muted mb-2">{t("language") || "Language"}</div>
+                    <div className="flex gap-2">
+                      <LanguageButton lng="en" current={i18n.language} onClick={changeLanguage} />
+                      <LanguageButton lng="fa" current={i18n.language} onClick={changeLanguage} />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -190,6 +234,7 @@ const Layout = () => {
             >
               <span className="hidden sm:inline">📈 Intensity Profile</span>
               <span className="sm:hidden">📈 Intensity</span>
+               
             </button>
           </div>
 

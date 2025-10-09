@@ -14,7 +14,7 @@ export const LayerProvider = ({ children }) => {
   const [layers, setLayers] = useState([]);
   const [activeLayerId, setActiveLayerId] = useState(null);
   const layerIdCounter = useRef(0);
-
+ 
   // Create a new layer
   const createLayer = useCallback((name, type = 'default', options = {}) => {
     const newLayer = {
