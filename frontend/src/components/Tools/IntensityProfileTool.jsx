@@ -393,7 +393,6 @@ const IntensityProfileTool = ({ canvas, isActive, onClose }) => {
 
   // Handle parallel lines drawing
   const handleParallelLinesDrawing = useCallback((x1, y1, x2, y2) => {
-    console.log('🎯 handleParallelLinesDrawing called with spacing:', globalLineSpacingRef.current);
     removeRegionObject();
 
     // Clear any existing overlay text
@@ -402,7 +401,6 @@ const IntensityProfileTool = ({ canvas, isActive, onClose }) => {
 
     // Use ref to get current spacing value
     const currentSpacing = globalLineSpacingRef.current;
-    console.log('📏 currentSpacing =', currentSpacing);
 
     // Calculate intensity profile
     const result = calculateParallelLinesIntensity(x1, y1, x2, y2, currentSpacing);
@@ -789,9 +787,13 @@ const IntensityProfileTool = ({ canvas, isActive, onClose }) => {
   useEffect(() => {
     if (isActive && canvas) {
       startDrawing();
+      // Disable selection box
+      canvas.selection = false;
     } else if (!isActive && canvas) {
       setIsDrawing(false);
       startPointRef.current = null;
+      // Re-enable selection box
+      canvas.selection = true;
       // Don't remove region objects when tool becomes inactive
       // This allows the lines to persist
       if (canvas.defaultCursor) {
@@ -943,10 +945,8 @@ const IntensityProfileTool = ({ canvas, isActive, onClose }) => {
               value={lineSpacing}
               onChange={(e) => {
                 const newSpacing = parseInt(e.target.value);
-                console.log('📏 Slider changed to:', newSpacing);
                 setLineSpacing(newSpacing);
                 globalLineSpacingRef.current = newSpacing;
-                console.log('📌 globalLineSpacingRef.current is now:', globalLineSpacingRef.current);
                 localStorage.setItem('intensityProfileLineSpacing', newSpacing.toString());
               }}
               className="w-full h-2 bg-background-secondary rounded-lg appearance-none cursor-pointer slider-green"
