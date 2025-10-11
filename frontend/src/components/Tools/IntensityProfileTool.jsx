@@ -5,15 +5,32 @@ import { fabric } from 'fabric';
 import { useIntensityProfile } from '../../contexts/IntensityProfileContext';
 import { useToolLayer } from '../../hooks/useToolLayer';
 
+// Get initial spacing from localStorage or default to 50
+const getInitialSpacing = () => {
+  try {
+    const saved = localStorage.getItem('intensityProfileLineSpacing');
+    return saved ? parseInt(saved) : 50;
+  } catch {
+    return 50;
+  }
+};
+
+// Keep lineSpacingRef outside component to avoid closure issues
+const globalLineSpacingRef = { current: getInitialSpacing() };
+
 const IntensityProfileTool = ({ canvas, isActive, onClose }) => {
   const [regionMode, setRegionMode] = useState('parallel-lines'); // Only parallel-lines mode
   const [isDrawing, setIsDrawing] = useState(false);
   const [showPanel, setShowPanel] = useState(false);
-  const [lineSpacing, setLineSpacing] = useState(50); // spacing for parallel lines
+  const [lineSpacing, setLineSpacing] = useState(getInitialSpacing());
   const regionObjectRef = useRef(null);
   const overlayTextRef = useRef([]);
   const startPointRef = useRef(null);
-  const listenersAttachedRef = useRef(false);
+  const handlersRef = useRef({
+    mouseDown: null,
+    mouseMove: null,
+    mouseUp: null
+  });
 
   const { addProfile, selectedRegion, setSelectedRegion } = useIntensityProfile();
   const { addToLayer, removeFromLayer, getCurrentLayer } = useToolLayer(
@@ -23,10 +40,10 @@ const IntensityProfileTool = ({ canvas, isActive, onClose }) => {
     isActive
   );
 
-  // Debug: log when component mounts/updates
+  // Keep global ref in sync with state
   useEffect(() => {
-    console.log('📊 IntensityProfileTool render - canvas:', !!canvas, 'isActive:', isActive, 'isDrawing:', isDrawing);
-  }, [canvas, isActive, isDrawing]);
+    globalLineSpacingRef.current = lineSpacing;
+  }, [lineSpacing]);
 
   // Calculate intensity along a line using Bresenham's algorithm
   const calculateLineIntensity = useCallback((x1, y1, x2, y2) => {
@@ -371,21 +388,24 @@ const IntensityProfileTool = ({ canvas, isActive, onClose }) => {
         fabricObject: line,
         profile: newProfile
       });
-
-      console.log('📊 Line intensity profile calculated:', profile.length, 'points');
     }
   }, [canvas, addToLayer, calculateLineIntensity, addProfile, setSelectedRegion, removeRegionObject]);
 
   // Handle parallel lines drawing
   const handleParallelLinesDrawing = useCallback((x1, y1, x2, y2) => {
+    console.log('🎯 handleParallelLinesDrawing called with spacing:', globalLineSpacingRef.current);
     removeRegionObject();
 
     // Clear any existing overlay text
     overlayTextRef.current.forEach(text => canvas.remove(text));
     overlayTextRef.current = [];
 
+    // Use ref to get current spacing value
+    const currentSpacing = globalLineSpacingRef.current;
+    console.log('📏 currentSpacing =', currentSpacing);
+
     // Calculate intensity profile
-    const result = calculateParallelLinesIntensity(x1, y1, x2, y2, lineSpacing);
+    const result = calculateParallelLinesIntensity(x1, y1, x2, y2, currentSpacing);
 
     if (result) {
       const { profiles, line1, line2 } = result;
@@ -470,7 +490,7 @@ const IntensityProfileTool = ({ canvas, isActive, onClose }) => {
 
         // Calculate perpendicular offset based on intensity
         // Map intensity to position between the two parallel lines
-        const offset = (normalizedIntensity - 0.5) * lineSpacing;
+        const offset = (normalizedIntensity - 0.5) * currentSpacing;
 
         return {
           x: point.x + perpX * offset,
@@ -495,8 +515,8 @@ const IntensityProfileTool = ({ canvas, isActive, onClose }) => {
 
       // Add min/max labels
       const minText = new fabric.Text(`Min: ${minIntensity.toFixed(0)}`, {
-        left: x1 - perpX * lineSpacing / 2,
-        top: y1 - perpY * lineSpacing / 2 - 20,
+        left: x1 - perpX * currentSpacing / 2,
+        top: y1 - perpY * currentSpacing / 2 - 20,
         fontSize: 14,
         fill: '#ffff00',
         backgroundColor: 'rgba(0, 0, 0, 0.85)',
@@ -507,8 +527,8 @@ const IntensityProfileTool = ({ canvas, isActive, onClose }) => {
       });
 
       const maxText = new fabric.Text(`Max: ${maxIntensity.toFixed(0)}`, {
-        left: x1 + perpX * lineSpacing / 2,
-        top: y1 + perpY * lineSpacing / 2 - 20,
+        left: x1 + perpX * currentSpacing / 2,
+        top: y1 + perpY * currentSpacing / 2 - 20,
         fontSize: 14,
         fill: '#ffff00',
         backgroundColor: 'rgba(0, 0, 0, 0.85)',
@@ -531,7 +551,7 @@ const IntensityProfileTool = ({ canvas, isActive, onClose }) => {
       // Store the profile data
       const newProfile = addProfile({
         type: 'parallel-lines',
-        region: { x1, y1, x2, y2, spacing: lineSpacing },
+        region: { x1, y1, x2, y2, spacing: currentSpacing },
         data: profiles,
         length: result.length,
         spacing: result.spacing
@@ -543,9 +563,8 @@ const IntensityProfileTool = ({ canvas, isActive, onClose }) => {
         profile: newProfile
       });
 
-      console.log('📊 Parallel lines intensity profile calculated:', profiles.length, 'points');
     }
-  }, [canvas, addToLayer, calculateParallelLinesIntensity, addProfile, setSelectedRegion, removeRegionObject, lineSpacing]);
+  }, [canvas, addToLayer, calculateParallelLinesIntensity, addProfile, setSelectedRegion, removeRegionObject]);
 
   // Handle rectangle drawing
   const handleRectangleDrawing = useCallback((x1, y1, x2, y2) => {
@@ -589,27 +608,20 @@ const IntensityProfileTool = ({ canvas, isActive, onClose }) => {
         fabricObject: rect,
         profile: newProfile
       });
-
-      console.log('📊 Rectangle intensity profiles calculated');
-      console.log('  Horizontal profile:', profiles.horizontalProfile.length, 'points');
-      console.log('  Vertical profile:', profiles.verticalProfile.length, 'points');
-      console.log('  Statistics:', profiles.statistics);
     }
   }, [canvas, addToLayer, calculateRectangleIntensity, addProfile, setSelectedRegion, removeRegionObject]);
 
   // Mouse event handlers
   const handleMouseDown = useCallback((e) => {
-    console.log('📊 Mouse down - isActive:', isActive, 'isDrawing:', isDrawing);
     if (!canvas || !isActive) return;
 
     // Clear previous drawings before starting new one
     removeRegionObject();
 
     const pointer = canvas.getPointer(e.e);
-    console.log('📊 Start point:', pointer);
     startPointRef.current = pointer;
     setIsDrawing(true);
-  }, [canvas, isActive, isDrawing, removeRegionObject]);
+  }, [canvas, isActive, removeRegionObject]);
 
   const handleMouseMove = useCallback((e) => {
     if (!canvas || !isActive || !startPointRef.current) return;
@@ -633,16 +645,19 @@ const IntensityProfileTool = ({ canvas, isActive, onClose }) => {
     const dy = pointer.y - startPoint.y;
     const length = Math.sqrt(dx * dx + dy * dy);
 
+    // Use ref to get current spacing value
+    const currentSpacing = globalLineSpacingRef.current;
+
     if (length > 0) {
       const perpX = -dy / length;
       const perpY = dx / length;
 
       const line1 = new fabric.Line(
         [
-          startPoint.x + perpX * lineSpacing / 2,
-          startPoint.y + perpY * lineSpacing / 2,
-          pointer.x + perpX * lineSpacing / 2,
-          pointer.y + perpY * lineSpacing / 2
+          startPoint.x + perpX * currentSpacing / 2,
+          startPoint.y + perpY * currentSpacing / 2,
+          pointer.x + perpX * currentSpacing / 2,
+          pointer.y + perpY * currentSpacing / 2
         ],
         {
           stroke: '#ff0000',
@@ -655,10 +670,10 @@ const IntensityProfileTool = ({ canvas, isActive, onClose }) => {
 
       const line2 = new fabric.Line(
         [
-          startPoint.x - perpX * lineSpacing / 2,
-          startPoint.y - perpY * lineSpacing / 2,
-          pointer.x - perpX * lineSpacing / 2,
-          pointer.y - perpY * lineSpacing / 2
+          startPoint.x - perpX * currentSpacing / 2,
+          startPoint.y - perpY * currentSpacing / 2,
+          pointer.x - perpX * currentSpacing / 2,
+          pointer.y - perpY * currentSpacing / 2
         ],
         {
           stroke: '#ff0000',
@@ -671,10 +686,10 @@ const IntensityProfileTool = ({ canvas, isActive, onClose }) => {
 
       const startConnector = new fabric.Line(
         [
-          startPoint.x + perpX * lineSpacing / 2,
-          startPoint.y + perpY * lineSpacing / 2,
-          startPoint.x - perpX * lineSpacing / 2,
-          startPoint.y - perpY * lineSpacing / 2
+          startPoint.x + perpX * currentSpacing / 2,
+          startPoint.y + perpY * currentSpacing / 2,
+          startPoint.x - perpX * currentSpacing / 2,
+          startPoint.y - perpY * currentSpacing / 2
         ],
         {
           stroke: '#ff0000',
@@ -688,10 +703,10 @@ const IntensityProfileTool = ({ canvas, isActive, onClose }) => {
 
       const endConnector = new fabric.Line(
         [
-          pointer.x + perpX * lineSpacing / 2,
-          pointer.y + perpY * lineSpacing / 2,
-          pointer.x - perpX * lineSpacing / 2,
-          pointer.y - perpY * lineSpacing / 2
+          pointer.x + perpX * currentSpacing / 2,
+          pointer.y + perpY * currentSpacing / 2,
+          pointer.x - perpX * currentSpacing / 2,
+          pointer.y - perpY * currentSpacing / 2
         ],
         {
           stroke: '#ff0000',
@@ -711,15 +726,13 @@ const IntensityProfileTool = ({ canvas, isActive, onClose }) => {
     }
 
     canvas.renderAll();
-  }, [canvas, isActive, lineSpacing]);
+  }, [canvas, isActive]);
 
   const handleMouseUp = useCallback((e) => {
-    console.log('📊 Mouse up - isActive:', isActive, 'startPoint:', startPointRef.current);
     if (!canvas || !isActive || !startPointRef.current) return;
 
     const pointer = canvas.getPointer(e.e);
     const startPoint = startPointRef.current;
-    console.log('📊 End point:', pointer);
 
     // Draw parallel lines with intensity values
     handleParallelLinesDrawing(
@@ -735,41 +748,41 @@ const IntensityProfileTool = ({ canvas, isActive, onClose }) => {
     canvas.hoverCursor = 'crosshair';
   }, [canvas, isActive, handleParallelLinesDrawing]);
 
-  // Setup canvas event listeners
+  // Update handlers ref whenever they change
+  useEffect(() => {
+    handlersRef.current = {
+      mouseDown: handleMouseDown,
+      mouseMove: handleMouseMove,
+      mouseUp: handleMouseUp
+    };
+  }, [handleMouseDown, handleMouseMove, handleMouseUp]);
+
+  // Setup canvas event listeners ONCE
   useEffect(() => {
     if (!canvas || !isActive) {
-      listenersAttachedRef.current = false;
       return;
     }
 
-    // Prevent attaching listeners multiple times
-    if (listenersAttachedRef.current) {
-      console.log('📊 Listeners already attached, skipping');
-      return;
-    }
+    // Create wrapper functions that call the latest handlers from ref
+    const onMouseDown = (e) => handlersRef.current.mouseDown?.(e);
+    const onMouseMove = (e) => handlersRef.current.mouseMove?.(e);
+    const onMouseUp = (e) => handlersRef.current.mouseUp?.(e);
 
-    console.log('📊 Setting up intensity profile event listeners');
-
-    // Remove any existing listeners first
+    // Remove any existing listeners
     canvas.off('mouse:down');
     canvas.off('mouse:move');
     canvas.off('mouse:up');
 
-    // Add new listeners
-    canvas.on('mouse:down', handleMouseDown);
-    canvas.on('mouse:move', handleMouseMove);
-    canvas.on('mouse:up', handleMouseUp);
-
-    listenersAttachedRef.current = true;
+    // Add listeners
+    canvas.on('mouse:down', onMouseDown);
+    canvas.on('mouse:move', onMouseMove);
+    canvas.on('mouse:up', onMouseUp);
 
     return () => {
-      console.log('📊 Cleaning up intensity profile event listeners');
-      canvas.off('mouse:down', handleMouseDown);
-      canvas.off('mouse:move', handleMouseMove);
-      canvas.off('mouse:up', handleMouseUp);
-      listenersAttachedRef.current = false;
+      canvas.off('mouse:down', onMouseDown);
+      canvas.off('mouse:move', onMouseMove);
+      canvas.off('mouse:up', onMouseUp);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canvas, isActive]);
 
   // Auto-start drawing when tool becomes active
@@ -792,11 +805,10 @@ const IntensityProfileTool = ({ canvas, isActive, onClose }) => {
 
   const startDrawing = useCallback(() => {
     if (!canvas) return;
-    console.log('📊 Starting intensity profile drawing, mode:', regionMode);
     setIsDrawing(true);
     canvas.defaultCursor = 'crosshair';
     canvas.hoverCursor = 'crosshair';
-  }, [canvas, regionMode]);
+  }, [canvas]);
 
   return (
     <motion.div
@@ -929,7 +941,14 @@ const IntensityProfileTool = ({ canvas, isActive, onClose }) => {
               min="20"
               max="200"
               value={lineSpacing}
-              onChange={(e) => setLineSpacing(parseInt(e.target.value))}
+              onChange={(e) => {
+                const newSpacing = parseInt(e.target.value);
+                console.log('📏 Slider changed to:', newSpacing);
+                setLineSpacing(newSpacing);
+                globalLineSpacingRef.current = newSpacing;
+                console.log('📌 globalLineSpacingRef.current is now:', globalLineSpacingRef.current);
+                localStorage.setItem('intensityProfileLineSpacing', newSpacing.toString());
+              }}
               className="w-full h-2 bg-background-secondary rounded-lg appearance-none cursor-pointer slider-green"
               style={{
                 background: `linear-gradient(to right, #10b981 0%, #10b981 ${((lineSpacing - 20) / 180) * 100}%, #e5e7eb ${((lineSpacing - 20) / 180) * 100}%, #e5e7eb 100%)`
