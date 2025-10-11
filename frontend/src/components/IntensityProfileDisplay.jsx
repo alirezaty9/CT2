@@ -11,9 +11,9 @@ const IntensityProfileDisplay = () => {
 
   const activeProfile = getActiveProfile();
 
-  // Draw line profile chart
+  // Draw line or parallel-lines profile chart
   const drawLineProfile = useEffect(() => {
-    if (!activeProfile || activeProfile.type !== 'line' || !canvasRef.current) return;
+    if (!activeProfile || (activeProfile.type !== 'line' && activeProfile.type !== 'parallel-lines') || !canvasRef.current) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -166,11 +166,17 @@ const IntensityProfileDisplay = () => {
 
     let csvContent = '';
 
-    if (activeProfile.type === 'line') {
+    if (activeProfile.type === 'line' || activeProfile.type === 'parallel-lines') {
       csvContent = 'Distance,X,Y,Red,Green,Blue,Intensity\n';
       activeProfile.data.forEach(point => {
         csvContent += `${point.distance.toFixed(2)},${point.x},${point.y},${point.r},${point.g},${point.b},${point.intensity.toFixed(2)}\n`;
       });
+
+      if (activeProfile.type === 'parallel-lines') {
+        csvContent += `\n--- Metadata ---\n`;
+        csvContent += `Spacing,${activeProfile.spacing}\n`;
+        csvContent += `Length,${activeProfile.length.toFixed(2)}\n`;
+      }
     } else if (activeProfile.type === 'rectangle') {
       // Export horizontal profile
       csvContent = 'Position,Red,Green,Blue,Intensity\n';
@@ -222,7 +228,7 @@ const IntensityProfileDisplay = () => {
         <div className="flex items-center gap-2">
           <Activity size={14} className="text-green-500" />
           <span className="text-xs font-semibold text-text">
-            {activeProfile.type === 'line' ? 'Line' : 'Rectangle'}
+            {activeProfile.type === 'line' ? 'Line' : activeProfile.type === 'parallel-lines' ? 'Parallel Lines' : 'Rectangle'}
           </span>
         </div>
 

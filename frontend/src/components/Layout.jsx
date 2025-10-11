@@ -68,7 +68,7 @@ const LanguageButton = ({ lng, current, onClick }) => (
 // پنل پایین (وضعیت سیستم و دوربین)
 const BottomPanels = ({ t }) => (
   <div className="flex-shrink-0 flex flex-col sm:flex-row gap-2 py-2 px-2 sm:px-4">
-    <div className="panel flex-1 flex items-center justify-center text-xs sm:text-sm dark:text-text min-h-[40px] sm:min-h-[50px] md:min-h-[60px] lg:min-h-[70px]">
+    <div className="panel bg-red-500 flex-1 flex items-center justify-center text-xs sm:text-sm dark:text-text min-h-[40px] sm:min-h-[50px] md:min-h-[60px] lg:min-h-[70px]">
       {t("systemStatus")}
     </div>
     <div className="card border border-black flex-shrink-0 w-full sm:w-auto h-[60px] sm:h-[70px] md:h-[90px] lg:h-[110px]">
@@ -120,7 +120,7 @@ const Layout = () => {
       <div className="mobile-column">
         <div className="card flex-1 flex flex-col min-h-0">
           {/* نوار بالا - ارتفاع ثابت */}
-          <div className="flex-shrink-0 flex flex-col sm:flex-row items-start sm:items-center justify-between px-2 sm:px-4 py-2 sm:py-3 border-b border-border bg-background-secondary dark:bg-background-secondary dark:border-border rounded-t-xl gap-2 sm:gap-0">
+          <div className="flex-shrink-0 flex flex-col sm:flex-row items-start sm:items-center justify-between px-2 sm:px-4 py-2 sm:py-3 border-b border-border bg-background-secondary dark:bg-background-secondary dark:border-border gap-2 sm:gap-0">
             <div className="w-full sm:w-auto">
               <TabNav
                 tabs={tabs.map((tab) => ({ ...tab, label: t(tab.label) }))}
@@ -184,7 +184,7 @@ const Layout = () => {
       <div className="desktop-column">
         {/* بخش بالا - تصویر باسلر */}
         <div className="flex-1 flex flex-col min-h-0 gap-0">
-          <div className="card flex-1 rounded-b-none border-b-0 relative overflow-hidden flex flex-col sm:flex-row min-h-[300px] sm:min-h-[400px] md:min-h-[450px] lg:min-h-[500px]">
+          <div className="card flex-1 border-b-0 relative overflow-hidden flex flex-col sm:flex-row min-h-[300px] sm:min-h-[400px] md:min-h-[450px] lg:min-h-[500px]">
             <div className="hidden sm:block flex-shrink-0">
               <BaslerTools />
             </div>
@@ -204,7 +204,7 @@ const Layout = () => {
             </div>
           </div>
           {/* Image Reel - ارتفاع ثابت */}
-          <div className="card flex-shrink-0 rounded-t-none border-t-0 text-text dark:text-text font-medium text-center p-2 sm:p-3 text-xs sm:text-sm min-h-[40px] sm:min-h-[50px] md:min-h-[60px] lg:min-h-[70px] flex items-center justify-center">
+          <div className="card flex-shrink-0 border-t-0 text-text dark:text-text font-medium text-center p-2 sm:p-3 text-xs sm:text-sm min-h-[40px] sm:min-h-[50px] md:min-h-[60px] lg:min-h-[70px] flex items-center justify-center">
             {t("imageReel")}
           </div>
         </div>

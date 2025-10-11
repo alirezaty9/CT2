@@ -8,14 +8,25 @@ export function ThemeProvider({ children }) {
     return saved ?? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
   });
 
+  const [industrialUI, setIndustrialUI] = useState(() => {
+    const saved = localStorage.getItem('industrialUI');
+    return saved === 'true';
+  });
+
   useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle('dark', theme === 'dark');
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle('industrial', industrialUI);
+    localStorage.setItem('industrialUI', industrialUI);
+  }, [industrialUI]);
+
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, industrialUI, setIndustrialUI }}>
       {children}
     </ThemeContext.Provider>
   );

@@ -110,6 +110,42 @@ body {
   --color-accent-dark: #818cf8;         /* indigo-400 - متن داخل پنل‌ها، روشن و قابل دید */
 }
 
+/* 🏭 Industrial UI Theme - Windows XP Inspired */
+.industrial {
+  --color-primary: #b1cde5;            /* Light industrial blue */
+  --color-primary-dark: #8fb5d1;        /* Darker shade for hover */
+  --color-highlight: #d97706;          /* Amber industrial accent */
+  --color-highlight-dark: #b45309;      /* Darker amber */
+
+  --color-background: #ece9d8;         /* Classic Windows XP beige/tan */
+  --color-background-white: #ffffff;
+  --color-background-secondary: #d4d0c8; /* Windows XP gray */
+
+  --color-text: #000000;               /* Pure black text */
+  --color-text-muted: #666666;         /* Gray text */
+  --color-border: #b1cde5;             /* Light industrial blue borders */
+
+  --color-accent: #b1cde5;             /* Light industrial blue */
+  --color-accent-dark: #ffffff;        /* White text on blue */
+}
+
+.industrial.dark {
+  --color-primary: #5b9bd5;            /* Lighter blue for dark industrial */
+  --color-primary-dark: #4a8bc2;
+  --color-highlight: #ff8533;
+
+  --color-background: #2b2b2b;         /* Dark industrial gray */
+  --color-background-white: #3c3c3c;
+  --color-background-secondary: #4a4a4a;
+
+  --color-text: #e0e0e0;
+  --color-text-muted: #a0a0a0;
+  --color-border: #f5f5f5;
+
+  --color-accent: #5b9bd5;
+  --color-accent-dark: #ffffff;
+}
+
 @layer components {
   .variant-default {
     @apply text-text-muted hover:text-primary hover:bg-background-secondary;
@@ -232,6 +268,117 @@ body {
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none; /* Chrome, Safari, and Opera */
+  }
+
+  /* 🏭 Industrial UI Component Styles */
+  .industrial .card {
+    @apply border-2 border-border;
+    border-radius: 0;
+    box-shadow: none;
+    background: var(--color-background-white);
+  }
+
+  .industrial .panel {
+    border-radius: 0;
+    border: 2px solid #7a7a7a;
+    box-shadow: none;
+    font-family: 'Tahoma', 'Arial', sans-serif;
+    font-weight: bold;
+  }
+
+  .industrial button,
+  .industrial .button-active {
+    border-radius: 3px;
+    border: 1px solid #003c74;
+    background: linear-gradient(180deg, #ffffff 0%, #ece9d8 50%, #c9c7ba 100%);
+    box-shadow:
+      inset -1px -1px 1px rgba(0, 0, 0, 0.2),
+      inset 1px 1px 1px rgba(255, 255, 255, 0.9),
+      1px 1px 2px rgba(0, 0, 0, 0.3);
+    padding: 4px 12px;
+    font-family: 'Tahoma', 'Arial', sans-serif;
+    font-weight: bold;
+    color: #000000;
+    text-shadow: none;
+  }
+
+  .industrial button:hover {
+    background: linear-gradient(180deg, #fff7e6 0%, #f5f2e8 50%, #d4d1c5 100%);
+    border-color: #b1cde5;
+  }
+
+  .industrial button:active,
+  .industrial .button-active {
+    background: linear-gradient(180deg, #c9c7ba 0%, #ece9d8 50%, #ffffff 100%);
+    box-shadow:
+      inset 1px 1px 2px rgba(0, 0, 0, 0.4),
+      inset -1px -1px 1px rgba(255, 255, 255, 0.5);
+  }
+
+  .industrial .button-active,
+  .industrial button.bg-primary,
+  .industrial button[class*="bg-primary"] {
+    background: linear-gradient(180deg, #d4e5f3 0%, #b1cde5 50%, #8fb5d1 100%);
+    border: 1px solid #7a9fc0;
+    color: #000000;
+    box-shadow:
+      inset -1px -1px 1px rgba(0, 0, 0, 0.3),
+      inset 1px 1px 1px rgba(255, 255, 255, 0.4),
+      1px 1px 2px rgba(0, 0, 0, 0.4);
+  }
+
+  .industrial .button-active:hover,
+  .industrial button.bg-primary:hover {
+    background: linear-gradient(180deg, #e0edf7 0%, #c4dbec 50%, #a5c5df 100%);
+  }
+
+  .industrial input,
+  .industrial select,
+  .industrial textarea {
+    border-radius: 0;
+    border: 2px solid;
+    border-color: #7f9db9 #b9d7f1 #b9d7f1 #7f9db9;
+    box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.1);
+    background: #ffffff;
+    padding: 3px 5px;
+    font-family: 'Tahoma', 'Arial', sans-serif;
+  }
+
+  .industrial input:focus,
+  .industrial select:focus,
+  .industrial textarea:focus {
+    outline: 1px dotted #000000;
+    outline-offset: -2px;
+    border-color: #b1cde5;
+  }
+
+  /* Industrial tabs */
+  .industrial .tab-active {
+    border-radius: 3px 3px 0 0;
+    border: 2px solid #8c8c8c;
+    border-bottom: 2px solid var(--color-background-white);
+    background: var(--color-background-white);
+    box-shadow: none;
+    margin-bottom: -2px;
+  }
+
+  .industrial .tab-inactive {
+    border-radius: 3px 3px 0 0;
+    border: 1px solid #999999;
+    background: linear-gradient(180deg, #f0f0f0 0%, #d4d0c8 100%);
+  }
+
+  /* Rounded corners override for industrial */
+  .industrial .rounded-lg,
+  .industrial .rounded-xl,
+  .industrial .rounded-2xl,
+  .industrial .rounded-full {
+    border-radius: 3px !important;
+  }
+
+  /* Remove modern shadows in industrial mode */
+  .industrial * {
+    transition: none !important;
   }
 }
 

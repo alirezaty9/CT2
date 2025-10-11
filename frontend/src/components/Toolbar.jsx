@@ -234,7 +234,7 @@ const Toolbar = ({ className = "" }) => {
   return (
     <motion.div
       className={twMerge(
-        "bg-background-secondary h-full flex flex-col border-r border-border rounded-l-xl shadow-card dark:bg-background-secondary dark:border-border relative",
+        "bg-background-secondary h-full flex flex-col border-r border-border shadow-card dark:bg-background-secondary dark:border-border relative",
         isExpanded ? "w-48 sm:w-64" : "w-12 sm:w-16",
         className
       )}
