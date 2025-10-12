@@ -18,8 +18,6 @@ import { useTranslation } from "react-i18next";
 import BaslerDisplay from "./Camera/BaslerDisplay";
 import MonitoringDisplay from "./Camera/MonitoringDisplay";
 import HistogramDisplay from "./HistogramDisplay";
-import IntensityProfileDisplay from "./IntensityProfileDisplay";
-import { LayerManager } from "./Layers";
 
 // تب‌های بالا
 const tabs = [
@@ -65,14 +63,37 @@ const LanguageButton = ({ lng, current, onClick }) => (
   </button>
 );
 
-// پنل پایین (وضعیت سیستم و دوربین)
-const BottomPanels = ({ t }) => (
-  <div className="flex-shrink-0 flex flex-col sm:flex-row gap-2 py-2 px-2 sm:px-4">
-    <div className="panel bg-red-500 flex-1 flex items-center justify-center text-xs sm:text-sm dark:text-text min-h-[40px] sm:min-h-[50px] md:min-h-[60px] lg:min-h-[70px]">
-      {t("systemStatus")}
-    </div>
-    <div className="card border border-black flex-shrink-0 w-full sm:w-auto h-[60px] sm:h-[70px] md:h-[90px] lg:h-[110px]">
-      <MonitoringDisplay />
+// System Status Bar (moved to top)
+const SystemStatusBar = ({ t, isPowerOn, onPowerOn, onPowerOff }) => (
+  <div className="flex-shrink-0 px-2 sm:px-4 py-2 border-b border-border bg-background-secondary dark:bg-background-secondary">
+    <div className="flex items-center justify-between gap-2">
+      <div className={`panel flex-1 flex items-center justify-center text-xs sm:text-sm text-white font-semibold min-h-[40px] sm:min-h-[50px] transition-colors ${
+        isPowerOn ? 'bg-green-500' : 'bg-red-500'
+      }`}>
+        {t("systemStatus")}: {isPowerOn ? 'ON' : 'OFF'}
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={onPowerOn}
+          className={`px-3 py-2 rounded-lg transition-all font-semibold text-xs sm:text-sm min-w-[60px] ${
+            isPowerOn
+              ? 'bg-green-600 text-white shadow-md'
+              : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-green-500 hover:text-white'
+          }`}
+        >
+          ON
+        </button>
+        <button
+          onClick={onPowerOff}
+          className={`px-3 py-2 rounded-lg transition-all font-semibold text-xs sm:text-sm min-w-[60px] ${
+            !isPowerOn
+              ? 'bg-red-600 text-white shadow-md'
+              : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-red-500 hover:text-white'
+          }`}
+        >
+          OFF
+        </button>
+      </div>
     </div>
   </div>
 );
@@ -85,8 +106,8 @@ const Layout = () => {
     : null;
 
   const [activeButton, setActiveButton] = useState(defaultActive);
-  const [analysisView, setAnalysisView] = useState('histogram'); // 'histogram' or 'intensity'
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [isPowerOn, setIsPowerOn] = useState(false); // System power state
   const settingsRef = useRef(null);
   const { t, i18n } = useTranslation();
 
@@ -101,6 +122,16 @@ const Layout = () => {
     },
     [i18n]
   );
+
+  const handlePowerOn = useCallback(() => {
+    setIsPowerOn(true);
+    console.log("System Power: ON");
+  }, []);
+
+  const handlePowerOff = useCallback(() => {
+    setIsPowerOn(false);
+    console.log("System Power: OFF");
+  }, []);
 
   // Close settings dropdown when clicking outside
   useEffect(() => {
@@ -119,6 +150,14 @@ const Layout = () => {
       {/* ستون چپ - در موبایل کامل عرض، در دسکتاپ 2/5 */}
       <div className="mobile-column">
         <div className="card flex-1 flex flex-col min-h-0">
+          {/* System Status Bar - بالای همه */}
+          <SystemStatusBar
+            t={t}
+            isPowerOn={isPowerOn}
+            onPowerOn={handlePowerOn}
+            onPowerOff={handlePowerOff}
+          />
+
           {/* نوار بالا - ارتفاع ثابت */}
           <div className="flex-shrink-0 flex flex-col sm:flex-row items-start sm:items-center justify-between px-2 sm:px-4 py-2 sm:py-3 border-b border-border bg-background-secondary dark:bg-background-secondary dark:border-border gap-2 sm:gap-0">
             <div className="w-full sm:w-auto">
@@ -174,9 +213,6 @@ const Layout = () => {
               <Outlet />
             </div>
           </div>
-
-          {/* وضعیت سیستم / دوربین - ارتفاع ثابت */}
-          <BottomPanels t={t} />
         </div>
       </div>
 
@@ -199,9 +235,6 @@ const Layout = () => {
                 </div>
               </div>
             </div>
-            <div className="hidden lg:block flex-shrink-0">
-              <LayerManager className="flex-shrink-0" />
-            </div>
           </div>
           {/* Image Reel - ارتفاع ثابت */}
           <div className="card flex-shrink-0 border-t-0 text-text dark:text-text font-medium text-center p-2 sm:p-3 text-xs sm:text-sm min-h-[40px] sm:min-h-[50px] md:min-h-[60px] lg:min-h-[70px] flex items-center justify-center">
@@ -209,38 +242,16 @@ const Layout = () => {
           </div>
         </div>
 
-        {/* Analysis Panel - ارتفاع بهبود یافته */}
-        <div className="card flex-shrink-0 p-2 sm:p-3 min-h-[180px] sm:min-h-[200px] md:min-h-[220px] lg:min-h-[240px] max-h-[240px] sm:max-h-[280px] md:max-h-[320px] lg:max-h-[360px] flex flex-col">
-          {/* Tab Switcher */}
-          <div className="flex gap-1 sm:gap-2 mb-2 sm:mb-3 flex-shrink-0">
-            <button
-              onClick={() => setAnalysisView('histogram')}
-              className={`px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-semibold rounded-lg transition-all flex items-center gap-1 flex-shrink-0 ${
-                analysisView === 'histogram'
-                  ? 'bg-gradient-to-r from-primary to-primary-dark text-white shadow-md'
-                  : 'bg-background-secondary dark:bg-background-primary text-text hover:bg-accent border border-border'
-              }`}
-            >
-              <span className="hidden sm:inline">📊 Histogram</span>
-              <span className="sm:hidden">📊 Hist</span>
-            </button>
-            <button
-              onClick={() => setAnalysisView('intensity')}
-              className={`px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-semibold rounded-lg transition-all flex items-center gap-1 flex-shrink-0 ${
-                analysisView === 'intensity'
-                  ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md'
-                  : 'bg-background-secondary dark:bg-background-primary text-text hover:bg-accent border border-border'
-              }`}
-            >
-              <span className="hidden sm:inline">📈 Intensity Profile</span>
-              <span className="sm:hidden">📈 Intensity</span>
-               
-            </button>
+        {/* Histogram Panel with Camera */}
+        <div className="card flex-shrink-0 p-2 sm:p-3 min-h-[180px] sm:min-h-[200px] md:min-h-[220px] lg:min-h-[240px] max-h-[240px] sm:max-h-[280px] md:max-h-[320px] lg:max-h-[360px] flex">
+          {/* Histogram Display - Left Side */}
+          <div className="flex-1 min-h-0 overflow-hidden rounded-lg bg-background-secondary dark:bg-background-primary border border-border p-2">
+            <HistogramDisplay />
           </div>
 
-          {/* Display Content */}
-          <div className="flex-1 min-h-0 overflow-hidden rounded-lg bg-background-secondary dark:bg-background-primary border border-border p-2">
-            {analysisView === 'histogram' ? <HistogramDisplay /> : <IntensityProfileDisplay />}
+          {/* Camera Display - Right Side */}
+          <div className="flex-shrink-0 w-[180px] sm:w-[220px] md:w-[260px] lg:w-[300px] rounded-lg border border-border overflow-hidden ml-2">
+            <MonitoringDisplay />
           </div>
         </div>
       </div>
