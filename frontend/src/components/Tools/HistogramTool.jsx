@@ -43,12 +43,7 @@ const HistogramTool = ({ canvas, isActive, onClose }) => {
       histogram.gray[gray]++;
     }
 
-    // Normalize to percentages
-    const totalPixels = data.length / 4;
-    Object.keys(histogram).forEach(channel => {
-      histogram[channel] = histogram[channel].map(v => (v / totalPixels) * 100);
-    });
-
+    // Return actual pixel counts (not percentages)
     return histogram;
   }, []);
 
