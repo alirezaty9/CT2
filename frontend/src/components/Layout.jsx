@@ -65,9 +65,9 @@ const LanguageButton = ({ lng, current, onClick }) => (
 
 // System Status Bar (moved to top)
 const SystemStatusBar = ({ t, isPowerOn, onPowerOn, onPowerOff }) => (
-  <div className="flex-shrink-0 px-2 sm:px-4 py-2 border-b border-border bg-background-secondary dark:bg-background-secondary">
-    <div className="flex items-center justify-between gap-2">
-      <div className={`panel flex-1 flex items-center justify-center text-xs sm:text-sm text-white font-semibold min-h-[40px] sm:min-h-[50px] transition-colors ${
+  <div className="flex-shrink-0 px-4 py-3 border-b border-border bg-background-secondary dark:bg-background-secondary">
+    <div className="flex items-center gap-3">
+      <div className={`panel flex-1 flex items-center justify-center text-sm text-white font-semibold h-10 transition-all duration-200 ${
         isPowerOn ? 'bg-green-500' : 'bg-red-500'
       }`}>
         {t("systemStatus")}: {isPowerOn ? 'ON' : 'OFF'}
@@ -75,20 +75,20 @@ const SystemStatusBar = ({ t, isPowerOn, onPowerOn, onPowerOff }) => (
       <div className="flex gap-2">
         <button
           onClick={onPowerOn}
-          className={`px-3 py-2 rounded-lg transition-all font-semibold text-xs sm:text-sm min-w-[60px] ${
+          className={`h-10 px-4 rounded-lg transition-all duration-200 font-semibold text-sm min-w-[70px] ${
             isPowerOn
               ? 'bg-green-600 text-white shadow-md'
-              : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-green-500 hover:text-white'
+              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-green-500 hover:text-white'
           }`}
         >
           ON
         </button>
         <button
           onClick={onPowerOff}
-          className={`px-3 py-2 rounded-lg transition-all font-semibold text-xs sm:text-sm min-w-[60px] ${
+          className={`h-10 px-4 rounded-lg transition-all duration-200 font-semibold text-sm min-w-[70px] ${
             !isPowerOn
               ? 'bg-red-600 text-white shadow-md'
-              : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-red-500 hover:text-white'
+              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-red-500 hover:text-white'
           }`}
         >
           OFF

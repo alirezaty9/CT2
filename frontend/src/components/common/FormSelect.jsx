@@ -14,11 +14,13 @@ const FormSelect = ({
   const textAlign = i18n.language === 'fa' ? 'text-right' : 'text-left';
 
   const baseClasses = `
-    w-full p-2 sm:p-3 border border-border rounded-xl
+    w-full px-3 py-2 border border-border rounded-lg
     bg-background-white dark:bg-background-secondary
     text-text dark:text-text outline-none
     focus:border-primary focus:ring-2 focus:ring-primary/20
-    transition-all duration-300 ease-out font-vazir text-sm sm:text-base
+    transition-all duration-200
+    text-sm font-medium
+    cursor-pointer
     ${disabled ? 'cursor-not-allowed opacity-50' : ''}
     ${textAlign}
   `;

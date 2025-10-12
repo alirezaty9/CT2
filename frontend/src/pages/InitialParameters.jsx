@@ -115,7 +115,7 @@ const InitialParameters = () => {
       <ConnectionStatus icon={Zap} />
 
       {/* Quick Actions */}
-      <div className="card p-3 sm:p-4 mb-3 sm:mb-4">
+      <div className="card p-4 mb-4">
         <div className="flex flex-wrap gap-2">
           {Object.entries({
             standard: t('presetStandard'),
@@ -125,8 +125,8 @@ const InitialParameters = () => {
             <button
               key={key}
               onClick={presetHandlers[key]}
-              className={`px-3 sm:px-4 py-1.5 sm:py-2 variant-primary rounded-lg border border-border hover:variant-primary text-xs sm:text-sm font-medium font-vazir flex-shrink-0 ${
-                activeButton === key ? 'button-active no-transition' : ''
+              className={`h-10 px-4 variant-primary rounded-lg border border-border transition-all duration-200 text-sm font-medium flex-shrink-0 ${
+                activeButton === key ? 'button-active' : ''
               }`}
             >
               {label}
@@ -136,7 +136,7 @@ const InitialParameters = () => {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         
         {/* Power */}
         <FormField label={t('power')} icon={Gauge} value={pageData.power} unit="W">

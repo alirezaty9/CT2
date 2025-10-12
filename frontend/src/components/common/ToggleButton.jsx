@@ -14,9 +14,9 @@ const ToggleButton = ({
   const textAlign = i18n.language === 'fa' ? 'text-right' : 'text-left';
 
   const buttonClasses = `
-    px-6 py-3 rounded-lg font-medium font-vazir transition-colors
-    ${active 
-      ? 'bg-primary hover:bg-primary-dark text-white' 
+    h-10 px-4 rounded-lg font-medium transition-all duration-200
+    ${active
+      ? 'bg-primary hover:bg-primary-dark text-white shadow-md'
       : 'bg-background-secondary hover:bg-accent text-text-muted'
     }
     ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
@@ -26,12 +26,12 @@ const ToggleButton = ({
   return (
     <div>
       {showStatus && (
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center mb-3">
           <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${active ? 'bg-primary' : 'bg-text-muted'}`}></div>
-            <span className={`text-sm font-medium ${
+            <div className={`w-2 h-2 rounded-full transition-colors duration-200 ${active ? 'bg-primary' : 'bg-gray-400'}`}></div>
+            <span className={`text-sm font-medium transition-colors duration-200 ${
               active ? 'text-primary dark:text-primary' : 'text-text-muted dark:text-text-muted'
-            } font-vazir ${textAlign}`}>
+            } ${textAlign}`}>
               {active ? t('active') : t('inactive')}
             </span>
           </div>
@@ -43,7 +43,7 @@ const ToggleButton = ({
         disabled={disabled}
         className={buttonClasses}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-center gap-2">
           {Icon && <Icon className="w-4 h-4" />}
           <span>{label || (active ? t('active') : t('inactive'))}</span>
         </div>
