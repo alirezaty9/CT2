@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useWebSocket } from '../contexts/WebSocketContext';
-import { Power, Video, Gauge, Zap, Battery, Filter, Clock, Layers, Settings, Camera } from 'lucide-react';
+import { Power, Video, VideoOff, Gauge, Zap, Battery, Filter, Clock, Layers, Settings, Camera } from 'lucide-react';
 
 // کامپوننت‌های مشترک
 import ConnectionStatus from '../components/common/ConnectionStatus';
@@ -11,7 +11,16 @@ import FormInput from '../components/common/FormInput';
 import FormSelect from '../components/common/FormSelect';
 import ToggleButton from '../components/common/ToggleButton';
 import PageContainer from '../components/common/PageContainer';
+import SystemStabilityCheck from '../components/SystemStabilityCheck';
+import XrayExposureLog from '../components/XrayExposureLog';
+import MonitoringDisplay from '../components/Camera/MonitoringDisplay';
+import TrajectoryDefinition from '../components/TrajectoryDefinition';
+import GeometryConfiguration from '../components/GeometryConfiguration';
 import { useFormPage } from '../hooks/useFormPage';
+
+// کامپوننت‌های مورد 19-20
+import ScanProtocolManagement from '../components/ScanProtocolManagement';
+import RealtimeMonitoringDashboard from '../components/RealtimeMonitoringDashboard';
 
 const InitialParameters = () => {
   const { t } = useTranslation();
@@ -113,6 +122,11 @@ const InitialParameters = () => {
     <PageContainer>
       {/* Connection Status */}
       <ConnectionStatus icon={Zap} />
+
+      {/* System Stability Check */}
+      <SystemStabilityCheck onStatusChange={(status) => {
+        console.log('System Status:', status);
+      }} />
 
       {/* Quick Actions */}
       <div className="card p-4 mb-4">
@@ -332,16 +346,88 @@ const InitialParameters = () => {
           />
         </FormField>
 
-        {/* Cabin Camera */}
-        <FormField label={t('cabinCameraStatus')} icon={Video} showValue={false}>
-          <ToggleButton
-            active={pageData.cabinCameraStatus}
-            onClick={toggleCabinCamera}
-            icon={Video}
-            disabled={!isConnected}
-          />
-        </FormField>
       </div>
+
+      {/* Cabin Camera Display */}
+      <div className="card p-4 lg:p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Video className="w-5 h-5 text-primary" />
+            <h3 className="text-lg font-semibold text-text dark:text-text">
+              {t('cabinCameraStatus')}
+            </h3>
+            <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+              pageData.cabinCameraStatus
+                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
+            }`}>
+              {pageData.cabinCameraStatus ? t('active') : t('inactive')}
+            </div>
+          </div>
+          <button
+            onClick={toggleCabinCamera}
+            disabled={!isConnected}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+              pageData.cabinCameraStatus
+                ? 'bg-red-600 text-white hover:bg-red-700'
+                : 'bg-green-600 text-white hover:bg-green-700'
+            } disabled:bg-gray-400 disabled:cursor-not-allowed`}
+          >
+            {pageData.cabinCameraStatus ? (
+              <>
+                <VideoOff className="w-4 h-4" />
+                <span>{t('turnOff') || 'Turn Off'}</span>
+              </>
+            ) : (
+              <>
+                <Video className="w-4 h-4" />
+                <span>{t('turnOn') || 'Turn On'}</span>
+              </>
+            )}
+          </button>
+        </div>
+        {pageData.cabinCameraStatus ? (
+          <div className="rounded-lg overflow-hidden border-2 border-border">
+            <MonitoringDisplay />
+          </div>
+        ) : (
+          <div className="aspect-video bg-black rounded-lg flex flex-col items-center justify-center text-text-muted border-2 border-border">
+            <VideoOff className="w-16 h-16 mb-3 opacity-30" />
+            <p className="text-sm">{t('cameraOff') || 'Camera is turned off'}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Real-time Monitoring Dashboard - مورد 20 */}
+      <RealtimeMonitoringDashboard disabled={!isConnected} />
+
+      {/* Scan Protocol Management - مورد 19 */}
+      <ScanProtocolManagement disabled={!isConnected} />
+
+      {/* Trajectory Definition */}
+      <TrajectoryDefinition
+        onTrajectoryChange={(trajectory) => {
+          console.log('Trajectory:', trajectory);
+        }}
+      />
+
+      {/* Geometry Configuration */}
+      <GeometryConfiguration
+        onGeometryChange={(geometry) => {
+          console.log('Geometry:', geometry);
+        }}
+      />
+
+      {/* X-ray Exposure Log */}
+      <XrayExposureLog
+        tubeParams={{
+          voltage: pageData.tubeVoltageDisplay,
+          current: pageData.tubeCurrentDisplay,
+          power: pageData.power,
+          exposureTime: pageData.exposureTime,
+          temperature: 25.5 + Math.random() * 5, // شبیه‌سازی دما
+        }}
+      />
     </PageContainer>
   );
 };

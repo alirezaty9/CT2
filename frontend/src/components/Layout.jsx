@@ -10,6 +10,8 @@ import {
   Settings,
   Sparkles,
   ChevronDown,
+  Zap,
+  AlertTriangle,
 } from "lucide-react";
 import BaslerTools from "./Toolbar";
 import TabNav from "./TabNav";
@@ -18,6 +20,7 @@ import { useTranslation } from "react-i18next";
 import BaslerDisplay from "./Camera/BaslerDisplay";
 import MonitoringDisplay from "./Camera/MonitoringDisplay";
 import HistogramDisplay from "./HistogramDisplay";
+import { useXray } from "../contexts/XrayContext";
 
 // تب‌های بالا
 const tabs = [
@@ -67,10 +70,12 @@ const LanguageButton = ({ lng, current, onClick }) => (
 const SystemStatusBar = ({ t, isPowerOn, onPowerOn, onPowerOff }) => (
   <div className="flex-shrink-0 px-4 py-3 border-b border-border bg-background-secondary dark:bg-background-secondary">
     <div className="flex items-center gap-3">
-      <div className={`panel flex-1 flex items-center justify-center text-sm text-white font-semibold h-10 transition-all duration-200 ${
+      <div className={`panel flex-1 flex items-center justify-center gap-2 text-sm text-white font-semibold h-10 transition-all duration-200 ${
         isPowerOn ? 'bg-green-500' : 'bg-red-500'
       }`}>
-        {t("systemStatus")}: {isPowerOn ? 'ON' : 'OFF'}
+        <Zap className="w-4 h-4" />
+        <span>{t("xrayStatus")}: {isPowerOn ? t("xrayOn") : t("xrayOff")}</span>
+        {isPowerOn && <AlertTriangle className="w-4 h-4 ml-2 animate-pulse" />}
       </div>
       <div className="flex gap-2">
         <button
@@ -95,6 +100,14 @@ const SystemStatusBar = ({ t, isPowerOn, onPowerOn, onPowerOff }) => (
         </button>
       </div>
     </div>
+    {isPowerOn && (
+      <div className="mt-2 px-3 py-2 bg-yellow-500/20 border border-yellow-500/50 rounded-lg flex items-center gap-2">
+        <AlertTriangle className="w-4 h-4 text-yellow-500" />
+        <span className="text-xs text-yellow-600 dark:text-yellow-400 font-medium">
+          {t("xraySafetyWarning")}
+        </span>
+      </div>
+    )}
   </div>
 );
 
@@ -107,9 +120,9 @@ const Layout = () => {
 
   const [activeButton, setActiveButton] = useState(defaultActive);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [isPowerOn, setIsPowerOn] = useState(false); // System power state
   const settingsRef = useRef(null);
   const { t, i18n } = useTranslation();
+  const { isXrayOn, turnOnXray, turnOffXray } = useXray();
 
   const handleButtonClick = useCallback((name) => {
     setActiveButton(name);
@@ -123,15 +136,6 @@ const Layout = () => {
     [i18n]
   );
 
-  const handlePowerOn = useCallback(() => {
-    setIsPowerOn(true);
-    console.log("System Power: ON");
-  }, []);
-
-  const handlePowerOff = useCallback(() => {
-    setIsPowerOn(false);
-    console.log("System Power: OFF");
-  }, []);
 
   // Close settings dropdown when clicking outside
   useEffect(() => {
@@ -153,9 +157,9 @@ const Layout = () => {
           {/* System Status Bar - بالای همه */}
           <SystemStatusBar
             t={t}
-            isPowerOn={isPowerOn}
-            onPowerOn={handlePowerOn}
-            onPowerOff={handlePowerOff}
+            isPowerOn={isXrayOn}
+            onPowerOn={turnOnXray}
+            onPowerOff={turnOffXray}
           />
 
           {/* نوار بالا - ارتفاع ثابت */}

@@ -16,6 +16,12 @@ import FormButton from '../components/common/FormButton';
 import PageContainer from '../components/common/PageContainer';
 import { useFormPage } from '../hooks/useFormPage';
 
+// کامپوننت‌های مورد 16-18
+import ImageQualityAssessment from '../components/ImageQualityAssessment';
+import DetectorConfiguration from '../components/DetectorConfiguration';
+import AdvancedFiltering from '../components/AdvancedFiltering';
+import RealTimeImageProcessor from '../components/RealTimeImageProcessor';
+
 const PostProcessing = () => {
   const { t, i18n } = useTranslation();
   const { isConnected, send } = useWebSocket();
@@ -123,6 +129,24 @@ const PostProcessing = () => {
     <PageContainer>
       {/* Connection Status */}
       <ConnectionStatus icon={Sparkles} />
+
+      {/* Real-time Image Processor - پردازش واقعی تصویر */}
+      <RealTimeImageProcessor />
+
+      {/* Image Quality Assessment - مورد 16 */}
+      <ImageQualityAssessment disabled={!isConnected} />
+
+      {/* Detector Configuration - مورد 17 */}
+      <DetectorConfiguration disabled={!isConnected} />
+
+      {/* Advanced Filtering - مورد 18 */}
+      <AdvancedFiltering
+        disabled={!isConnected}
+        onApplyFilter={(filterConfig) => {
+          console.log('Filter applied:', filterConfig);
+          handleAction('ApplyFilter', JSON.stringify(filterConfig));
+        }}
+      />
 
       {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-2">

@@ -13,26 +13,32 @@ import { CameraProvider } from "./contexts/CameraContext";
 import { HistogramProvider } from "./contexts/HistogramContext";
 import { LayerProvider } from "./contexts/LayerContext";
 import { IntensityProfileProvider } from "./contexts/IntensityProfileContext";
+import { XrayProvider } from "./contexts/XrayContext";
+import { ImageProcessingProvider } from "./contexts/ImageProcessingContext";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <HashRouter>
       <ThemeProvider>
-        <WebChannelProvider>
-          <WebSocketProvider>
-            <FormDataProvider>
-              <CameraProvider>
-                <HistogramProvider>
-                  <IntensityProfileProvider>
-                    <LayerProvider>
-                      <App />
-                    </LayerProvider>
-                  </IntensityProfileProvider>
-                </HistogramProvider>
-              </CameraProvider>
-            </FormDataProvider>
-          </WebSocketProvider>
-        </WebChannelProvider>
+        <XrayProvider>
+          <WebChannelProvider>
+            <WebSocketProvider>
+              <FormDataProvider>
+                <CameraProvider>
+                  <HistogramProvider>
+                    <IntensityProfileProvider>
+                      <ImageProcessingProvider>
+                        <LayerProvider>
+                          <App />
+                        </LayerProvider>
+                      </ImageProcessingProvider>
+                    </IntensityProfileProvider>
+                  </HistogramProvider>
+                </CameraProvider>
+              </FormDataProvider>
+            </WebSocketProvider>
+          </WebChannelProvider>
+        </XrayProvider>
       </ThemeProvider>
     </HashRouter>
   </React.StrictMode>

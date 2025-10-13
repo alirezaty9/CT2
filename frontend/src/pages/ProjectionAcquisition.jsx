@@ -1,5 +1,5 @@
 // src/pages/ProjectionAcquisition.jsx - نسخه بهینه‌شده
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useWebSocket } from '../contexts/WebSocketContext';
 import { Camera, Image, Sparkles, Settings } from 'lucide-react';
@@ -13,6 +13,12 @@ import ToggleButton from '../components/common/ToggleButton';
 import FormButton from '../components/common/FormButton';
 import PageContainer from '../components/common/PageContainer';
 import { useFormPage } from '../hooks/useFormPage';
+
+// کامپوننت‌های جدید برای مورد 11-15
+import AcquisitionSettings from '../components/AcquisitionSettings';
+import PositionFeedback from '../components/PositionFeedback';
+import LinearDetectorImaging from '../components/LinearDetectorImaging';
+import EnhancedCalibrationSystem from '../components/EnhancedCalibrationSystem';
 
 const ProjectionAcquisition = () => {
   const { t } = useTranslation();
@@ -30,6 +36,24 @@ const ProjectionAcquisition = () => {
 
   // ✅ استفاده از hook مشترک
   const { pageData, handleChange, updateFormData } = useFormPage('projectionAcquisition', defaultData);
+
+  // ✅ State برای موقعیت هدف منیپولیتور (مورد 13)
+  const [targetPosition, setTargetPosition] = useState({
+    x: 0,
+    y: 0,
+    z: 0,
+    theta: 0,
+    gamma: 0
+  });
+
+  // ✅ Handler برای شروع جمع‌آوری (مورد 11-12)
+  const handleAcquisitionStart = useCallback((settings) => {
+    console.log('Acquisition started with settings:', settings);
+    // اینجا می‌توانید تنظیمات را به WebSocket ارسال کنید
+    if (isConnected) {
+      send(JSON.stringify({ type: 'acquisition_start', settings }));
+    }
+  }, [isConnected, send]);
 
   // ✅ گزینه‌های imaging mode
   const imagingModeOptions = [
@@ -69,36 +93,30 @@ const ProjectionAcquisition = () => {
       {/* Connection Status */}
       <ConnectionStatus icon={Camera} />
 
+      {/* Acquisition Settings - مورد 11 و 12 */}
+      <AcquisitionSettings
+        onAcquisitionStart={handleAcquisitionStart}
+        disabled={!isConnected}
+      />
+
+      {/* Position Feedback - مورد 13 */}
+      <PositionFeedback
+        targetPosition={targetPosition}
+        disabled={!isConnected}
+      />
+
+      {/* Linear Detector Imaging - مورد 14 */}
+      <LinearDetectorImaging
+        disabled={!isConnected}
+      />
+
+      {/* Enhanced Calibration System - مورد 15 */}
+      <EnhancedCalibrationSystem
+        disabled={!isConnected}
+      />
+
       {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-2">
-        
-        {/* Imaging Mode */}
-        <FormField label={t('imagingMode')} icon={Camera}>
-          <FormSelect
-            name="imagingMode"
-            value={pageData.imagingMode}
-            onChange={handleChange}
-            options={imagingModeOptions}
-          />
-        </FormField>
-
-        {/* Multi-Segment Size */}
-        <FormField 
-          label={t('multiSegmentSize')} 
-          icon={Image} 
-          value={pageData.multiSegmentSize} 
-          unit="mm"
-        >
-          <FormInput
-            type="number"
-            name="multiSegmentSize"
-            value={pageData.multiSegmentSize}
-            onChange={handleChange}
-            placeholder={t('enterMultiSegmentSize')}
-            min="0"
-            step="0.1"
-          />
-        </FormField>
 
         {/* Image Adjustments - Actions */}
         <div className="card p-6 lg:col-span-2">

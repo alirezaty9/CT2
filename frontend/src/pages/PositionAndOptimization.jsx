@@ -9,6 +9,8 @@ import FormField from '../components/common/FormField';
 import FormInput from '../components/common/FormInput';
 import FormSelect from '../components/common/FormSelect';
 import PageContainer from '../components/common/PageContainer';
+import ManipulatorControl from '../components/ManipulatorControl';
+import JoystickSpeedControl from '../components/JoystickSpeedControl';
 import { useFormPage } from '../hooks/useFormPage';
 
 const PositionAndOptimization = () => {
@@ -58,41 +60,35 @@ const PositionAndOptimization = () => {
       {/* Connection Status */}
       <ConnectionStatus icon={Move3D} />
 
+      {/* Manipulator Control - New Enhanced Component */}
+      <ManipulatorControl
+        onPositionChange={(position) => {
+          console.log('Manipulator Position:', position);
+          // به‌روزرسانی formData با موقعیت جدید
+          updateFormData({
+            ...pageData,
+            manipulatorX: position.x,
+            manipulatorY: position.y,
+            manipulatorZ: position.z,
+            manipulatorTheta: position.theta,
+            manipulatorGamma: position.gamma,
+          });
+        }}
+      />
+
+      {/* Joystick Speed Control */}
+      <JoystickSpeedControl
+        speed={pageData.joystickSpeed}
+        onSpeedChange={(speed) => {
+          updateFormData({
+            ...pageData,
+            joystickSpeed: speed
+          });
+        }}
+      />
+
       {/* Main Content Grid */}
       <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
-
-        {/* Manipulator Section */}
-        <div className="card p-3 sm:p-4 lg:col-span-2">
-          <FormField label={t('manipulator')} icon={Move3D} showValue={false}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-3">
-              {manipulatorFields.map((field) => (
-                <div key={field.name}>
-                  <label className="text-xs sm:text-sm font-medium text-text dark:text-text mb-1 sm:mb-2 font-vazir block">
-                    {field.label}
-                  </label>
-                  <FormInput
-                    type="number"
-                    name={field.name}
-                    value={pageData[field.name]}
-                    onChange={handleChange}
-                    placeholder={field.placeholder}
-                    step="0.1"
-                  />
-                </div>
-              ))}
-            </div>
-          </FormField>
-        </div>
-
-        {/* Joystick Speed */}
-        <FormField label={t('joystickSpeed')} icon={Sliders}>
-          <FormSelect
-            name="joystickSpeed"
-            value={pageData.joystickSpeed}
-            onChange={handleChange}
-            options={joystickSpeedOptions}
-          />
-        </FormField>
 
         {/* File Upload */}
         <FormField label={t('uploadFile')} icon={Upload}>
