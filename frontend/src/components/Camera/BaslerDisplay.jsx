@@ -96,30 +96,6 @@ const BaslerDisplay = () => {
 
   // Fabric.js event handlers - defined before initialization
   const handleFabricPathCreated = useCallback((e) => {
-    console.log('✏️ ==================== PATH CREATED ====================');
-    console.log('Path object:', e.path);
-    console.log('Path type:', e.path?.type);
-    console.log('Path position - left:', e.path?.left, 'top:', e.path?.top);
-    console.log('Stroke width:', e.path?.strokeWidth);
-
-    if (e.path && e.path.path) {
-      console.log('Path data (first 10 points):');
-      const pathPoints = e.path.path.slice(0, 10);
-      pathPoints.forEach((point, idx) => {
-        console.log(`  Point ${idx}:`, point);
-      });
-      console.log('Total points in path:', e.path.path.length);
-
-      // Log bounding box
-      const bounds = e.path.getBoundingRect();
-      console.log('Bounding box:', {
-        left: bounds.left,
-        top: bounds.top,
-        width: bounds.width,
-        height: bounds.height
-      });
-    }
-    console.log('======================================================');
 
     // Make brush paths potentially selectable (will be controlled by move tool)
     if (e.path) {
@@ -141,12 +117,12 @@ const BaslerDisplay = () => {
     }
   }, [activeTool]);
 
-  const handleFabricObjectAdded = useCallback((e) => {
-    console.log('Fabric object added:', e.target);
+  const handleFabricObjectAdded = useCallback(() => {
+    // Object added to canvas
   }, []);
 
   const handleFabricMouseDown = useCallback((e) => {
-    console.log('🖱️ Mouse down - Tool:', activeTool);
+    // Mouse down event
   }, [activeTool]);
 
   const handleFabricMouseMove = useCallback((e) => {
@@ -210,7 +186,6 @@ const BaslerDisplay = () => {
       canvas.on('mouse:move', handleFabricMouseMove);
       canvas.on('mouse:up', handleFabricMouseUp);
 
-      console.log('🎯 Event listeners added to canvas');
 
       // Prevent background image from being selected or moved
       canvas.on('object:added', (e) => {
@@ -258,67 +233,81 @@ const BaslerDisplay = () => {
     let imageToDisplay = currentFrame;
     if (hasActiveFilters) {
       try {
-        console.log('🎨 Applying filters:', activeFilters, processingParams);
+        console.log('🎨 [FILTER] Starting image processing...');
+        console.log('🎨 [FILTER] Active filters:', JSON.stringify(activeFilters));
+        console.log('🎨 [FILTER] Processing params:', JSON.stringify(processingParams));
 
         // Load image directly into imageProcessor
+        const loadStartTime = performance.now();
         await imageProcessor.loadImage(currentFrame);
-        console.log('✅ Image loaded into processor');
+        console.log(`✅ [FILTER] Image loaded in ${(performance.now() - loadStartTime).toFixed(2)}ms`);
 
         // Apply each active filter in sequence using imageProcessor directly
         if (activeFilters.grayscale) {
+          const startTime = performance.now();
           imageProcessor.convertToGrayscale();
-          console.log('✅ Grayscale applied');
+          console.log(`✅ [FILTER] Grayscale applied in ${(performance.now() - startTime).toFixed(2)}ms`);
         }
         if (activeFilters.denoising) {
+          const startTime = performance.now();
           imageProcessor.applyGaussianFilter(processingParams.gaussianSigma);
-          console.log('✅ Gaussian applied');
+          console.log(`✅ [FILTER] Gaussian (σ=${processingParams.gaussianSigma}) applied in ${(performance.now() - startTime).toFixed(2)}ms`);
         }
         if (activeFilters.median) {
+          const startTime = performance.now();
           imageProcessor.applyMedianFilter(3);
-          console.log('✅ Median applied');
+          console.log(`✅ [FILTER] Median applied in ${(performance.now() - startTime).toFixed(2)}ms`);
         }
         if (activeFilters.sharpening) {
+          const startTime = performance.now();
           imageProcessor.applySharpen(processingParams.sharpenFactor);
-          console.log('✅ Sharpen applied');
+          console.log(`✅ [FILTER] Sharpen (factor=${processingParams.sharpenFactor}) applied in ${(performance.now() - startTime).toFixed(2)}ms`);
         }
         if (activeFilters.sobel || activeFilters.edgeEnhancement) {
+          const startTime = performance.now();
           imageProcessor.applySobelFilter();
-          console.log('✅ Sobel applied');
+          console.log(`✅ [FILTER] Sobel edge detection applied in ${(performance.now() - startTime).toFixed(2)}ms`);
         }
         if (activeFilters.histogramEq) {
+          const startTime = performance.now();
           imageProcessor.applyHistogramEqualization();
-          console.log('✅ Histogram Eq applied');
+          console.log(`✅ [FILTER] Histogram Equalization applied in ${(performance.now() - startTime).toFixed(2)}ms`);
         }
         if (activeFilters.invert) {
+          const startTime = performance.now();
           imageProcessor.applyInvert();
-          console.log('✅ Invert applied');
+          console.log(`✅ [FILTER] Invert applied in ${(performance.now() - startTime).toFixed(2)}ms`);
         }
         if (processingParams.brightness !== 0) {
+          const startTime = performance.now();
           imageProcessor.adjustBrightness(processingParams.brightness);
-          console.log('✅ Brightness applied');
+          console.log(`✅ [FILTER] Brightness (${processingParams.brightness}) applied in ${(performance.now() - startTime).toFixed(2)}ms`);
         }
         if (processingParams.contrast !== 0) {
+          const startTime = performance.now();
           imageProcessor.adjustContrast(processingParams.contrast);
-          console.log('✅ Contrast applied');
+          console.log(`✅ [FILTER] Contrast (${processingParams.contrast}) applied in ${(performance.now() - startTime).toFixed(2)}ms`);
         }
         if (processingParams.rotation !== 0) {
+          const startTime = performance.now();
           imageProcessor.applyRotation(processingParams.rotation);
-          console.log('✅ Rotation applied');
+          console.log(`✅ [FILTER] Rotation (${processingParams.rotation}°) applied in ${(performance.now() - startTime).toFixed(2)}ms`);
         }
 
         // Get the final processed image as data URL
         const finalProcessedImage = imageProcessor.getImageDataURL(true);
         if (finalProcessedImage) {
+          const imageSizeKB = (finalProcessedImage.length / 1024).toFixed(2);
           imageToDisplay = finalProcessedImage;
-          console.log('✅ Using processed image:', imageToDisplay.substring(0, 50) + '...');
+          console.log(`✅ [FILTER] Processed image ready (${imageSizeKB} KB)`);
+          console.log(`✅ [FILTER] Image preview: ${imageToDisplay.substring(0, 50)}...`);
         } else {
-          console.warn('⚠️ No processed image available, using original');
+          console.error('❌ [FILTER] CRITICAL: No processed image returned!');
         }
       } catch (error) {
-        console.error('❌ Error processing image:', error);
+        console.error('❌ [FILTER] Error processing image:', error);
+        console.error('❌ [FILTER] Error stack:', error.stack);
       }
-    } else {
-      console.log('ℹ️ No active filters, using original image');
     }
 
     fabric.Image.fromURL(imageToDisplay, (img) => {
@@ -394,31 +383,25 @@ const BaslerDisplay = () => {
 
     // Configure canvas based on active tool
     if (activeTool === 'crop') {
-      console.log('🔲 Configuring crop tool in BaslerDisplay...');
       canvas.selection = false;
       canvas.defaultCursor = 'crosshair';
       canvas.hoverCursor = 'crosshair';
-      console.log('🔲 Crop tool configured in BaslerDisplay');
     } else if (activeTool === 'eraser') {
       canvas.selection = false;
       canvas.defaultCursor = 'crosshair';
       canvas.hoverCursor = 'crosshair';
-      console.log('🧹 Eraser tool configured');
     } else if (activeTool === 'move') {
       canvas.selection = true;
       canvas.defaultCursor = 'default';
       canvas.hoverCursor = 'move';
-      console.log('✋ Move tool configured - all objects are now selectable');
     } else if (activeTool === 'brush' || activeTool === 'line') {
       canvas.isDrawingMode = true;
       canvas.selection = false;
       canvas.defaultCursor = 'crosshair';
       canvas.hoverCursor = 'crosshair';
-      console.log('🖌️ Drawing tool configured:', activeTool);
     }
 
     canvas.renderAll();
-    console.log('🔧 Canvas initialized for tool components - Active tool:', activeTool);
   }, [activeTool]);
 
   // همگام‌سازی ابزار فعال با Fabric.js
@@ -434,7 +417,6 @@ const BaslerDisplay = () => {
       // تاخیر کوتاه برای اطمینان از تکمیل تغییر ابزار
       const timeoutId = setTimeout(() => {
         if (fabricCanvasRef.current && !fabricCanvasRef.current.backgroundImage && cameras.basler.currentFrame) {
-          console.log('🔄 Background image missing after tool change, restoring...');
           updateFabricBackground();
         }
       }, 100);
@@ -453,15 +435,12 @@ const BaslerDisplay = () => {
   // Listen for canvas resize events (e.g., after crop)
   useEffect(() => {
     const handleCanvasResize = (event) => {
-      console.log('🔲 Canvas resize event received:', event.detail);
-      
       // Update HTML canvas element dimensions
       if (canvasRef.current && event.detail) {
         canvasRef.current.width = event.detail.width;
         canvasRef.current.height = event.detail.height;
         canvasRef.current.style.width = `${event.detail.width}px`;
         canvasRef.current.style.height = `${event.detail.height}px`;
-        console.log('🔲 HTML canvas updated to:', event.detail.width, 'x', event.detail.height);
       }
       
       // Force re-render to update mouse coordinates
@@ -541,8 +520,6 @@ const BaslerDisplay = () => {
       // Only reload if we have a current frame and no background
       updateFabricBackground();
     }
-    
-    console.log('🧹 Canvas cleared - background preserved');
   }, [updateFabricBackground]);
 
   // Clear all user-added objects (eraser all)
@@ -561,7 +538,6 @@ const BaslerDisplay = () => {
     });
     
     fabricCanvasRef.current.renderAll();
-    console.log(`🗑️ Removed ${removedCount} user objects`);
   }, []);
 
   const undoLastFabricAction = useCallback(() => {
@@ -572,7 +548,6 @@ const BaslerDisplay = () => {
     for (let i = objects.length - 1; i >= 0; i--) {
       if (objects[i] !== fabricCanvasRef.current.backgroundImage) {
         fabricCanvasRef.current.remove(objects[i]);
-        console.log('↩️ Undid last user action');
         break;
       }
     }
@@ -774,10 +749,6 @@ const BaslerDisplay = () => {
             // Set canvas size to match the actual image resolution
             canvas.width = naturalWidth;
             canvas.height = naturalHeight;
-            console.log(`📸 Basler frame loaded: ${naturalWidth}x${naturalHeight}`);
-          } else {
-            // Keep current dimensions if canvas was resized (e.g., after crop)
-            console.log(`📸 Basler frame loaded but keeping current canvas size: ${canvas.width}x${canvas.height}`);
           }
         }
         redrawCanvas();

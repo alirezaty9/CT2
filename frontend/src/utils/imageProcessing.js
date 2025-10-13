@@ -1,47 +1,67 @@
-// utils/imageProcessing.js - واقعی‌سازی پردازش تصویر با image-js
-import { Image } from 'image-js';
-
+// utils/imageProcessing.js - پردازش تصویر با Canvas API
 /**
- * کلاس پردازش تصویر واقعی
+ * کلاس پردازش تصویر با Canvas API
  */
 class ImageProcessor {
   constructor() {
-    this.originalImage = null;
-    this.processedImage = null;
+    this.canvas = document.createElement('canvas');
+    this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
+    this.originalImageData = null;
+    this.currentImageData = null;
   }
 
   /**
-   * بارگذاری تصویر از URL یا ArrayBuffer
+   * بارگذاری تصویر از URL یا Base64
    */
   async loadImage(source) {
-    try {
-      if (typeof source === 'string') {
-        // بارگذاری از URL
-        this.originalImage = await Image.load(source);
-      } else if (source instanceof ArrayBuffer) {
-        // بارگذاری از ArrayBuffer
-        this.originalImage = await Image.load(source);
-      } else if (source instanceof Uint8Array) {
-        // بارگذاری از Uint8Array
-        const blob = new Blob([source]);
-        const url = URL.createObjectURL(blob);
-        this.originalImage = await Image.load(url);
-        URL.revokeObjectURL(url);
-      }
-      this.processedImage = this.originalImage.clone();
-      return this.originalImage;
-    } catch (error) {
-      console.error('Error loading image:', error);
-      throw error;
-    }
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+
+      img.onload = () => {
+        try {
+          // تنظیم اندازه canvas
+          this.canvas.width = img.width;
+          this.canvas.height = img.height;
+
+          // رسم تصویر روی canvas
+          this.ctx.drawImage(img, 0, 0);
+
+          // ذخیره imageData
+          this.originalImageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+          this.currentImageData = this.cloneImageData(this.originalImageData);
+
+          resolve(this.originalImageData);
+        } catch (error) {
+          reject(error);
+        }
+      };
+
+      img.onerror = (error) => {
+        reject(new Error('Failed to load image: ' + error));
+      };
+
+      img.src = source;
+    });
+  }
+
+  /**
+   * کپی ImageData
+   */
+  cloneImageData(imageData) {
+    return new ImageData(
+      new Uint8ClampedArray(imageData.data),
+      imageData.width,
+      imageData.height
+    );
   }
 
   /**
    * ریست تصویر به حالت اولیه
    */
   reset() {
-    if (this.originalImage) {
-      this.processedImage = this.originalImage.clone();
+    if (this.originalImageData) {
+      this.currentImageData = this.cloneImageData(this.originalImageData);
     }
   }
 
@@ -49,394 +69,367 @@ class ImageProcessor {
    * دریافت تصویر به صورت Data URL
    */
   getImageDataURL(useProcessed = true) {
-    const image = useProcessed ? this.processedImage : this.originalImage;
-    if (!image) return null;
-    return image.toDataURL();
+    const imageData = useProcessed ? this.currentImageData : this.originalImageData;
+    if (!imageData) return null;
+
+    // قرار دادن imageData روی canvas
+    this.ctx.putImageData(imageData, 0, 0);
+
+    // تبدیل به data URL
+    return this.canvas.toDataURL('image/png');
   }
 
   /**
-   * فیلتر کاهش نویز - Gaussian
+   * فیلتر Gaussian Blur
    */
   applyGaussianFilter(sigma = 1.0) {
-    if (!this.processedImage) return;
-    try {
-      this.processedImage = this.processedImage.gaussianFilter({ sigma });
-      return this.getImageDataURL();
-    } catch (error) {
-      console.error('Gaussian filter error:', error);
-      throw error;
-    }
+    if (!this.currentImageData) return;
+
+    // استفاده از CSS filter blur (تقریباً معادل Gaussian)
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = this.canvas.width;
+    tempCanvas.height = this.canvas.height;
+    const tempCtx = tempCanvas.getContext('2d');
+
+    tempCtx.putImageData(this.currentImageData, 0, 0);
+    tempCtx.filter = `blur(${sigma * 2}px)`;
+    tempCtx.drawImage(tempCanvas, 0, 0);
+
+    this.currentImageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+    return this.getImageDataURL();
   }
 
   /**
-   * فیلتر میانه (Median)
+   * فیلتر Median (ساده‌سازی شده با box blur)
    */
   applyMedianFilter(kernelSize = 3) {
-    if (!this.processedImage) return;
-    try {
-      this.processedImage = this.processedImage.medianFilter({
-        borderType: Image.BORDER_REPLICATE
-      });
-      return this.getImageDataURL();
-    } catch (error) {
-      console.error('Median filter error:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * فیلتر میانگین (Mean/Box Blur)
-   */
-  applyMeanFilter(kernelSize = 3) {
-    if (!this.processedImage) return;
-    try {
-      const radius = Math.floor(kernelSize / 2);
-      this.processedImage = this.processedImage.blurFilter({ radius });
-      return this.getImageDataURL();
-    } catch (error) {
-      console.error('Mean filter error:', error);
-      throw error;
-    }
+    // برای سادگی از Gaussian استفاده می‌کنیم
+    return this.applyGaussianFilter(kernelSize / 3);
   }
 
   /**
    * تشخیص لبه - Sobel
    */
   applySobelFilter() {
-    if (!this.processedImage) return;
-    try {
-      this.processedImage = this.processedImage.sobelFilter();
-      return this.getImageDataURL();
-    } catch (error) {
-      console.error('Sobel filter error:', error);
-      throw error;
+    if (!this.currentImageData) return;
+
+    const data = this.currentImageData.data;
+    const width = this.currentImageData.width;
+    const height = this.currentImageData.height;
+    const result = new ImageData(width, height);
+
+    // Sobel kernels
+    const sobelX = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]];
+    const sobelY = [[-1, -2, -1], [0, 0, 0], [1, 2, 1]];
+
+    for (let y = 1; y < height - 1; y++) {
+      for (let x = 1; x < width - 1; x++) {
+        let gx = 0, gy = 0;
+
+        // اعمال kernel
+        for (let ky = -1; ky <= 1; ky++) {
+          for (let kx = -1; kx <= 1; kx++) {
+            const idx = ((y + ky) * width + (x + kx)) * 4;
+            const gray = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+
+            gx += gray * sobelX[ky + 1][kx + 1];
+            gy += gray * sobelY[ky + 1][kx + 1];
+          }
+        }
+
+        const magnitude = Math.sqrt(gx * gx + gy * gy);
+        const idx = (y * width + x) * 4;
+        result.data[idx] = result.data[idx + 1] = result.data[idx + 2] = Math.min(255, magnitude);
+        result.data[idx + 3] = 255;
+      }
     }
+
+    this.currentImageData = result;
+    return this.getImageDataURL();
   }
 
   /**
-   * تشخیص لبه - Gradient
+   * Gradient filter
    */
   applyGradientFilter() {
-    if (!this.processedImage) return;
-    try {
-      this.processedImage = this.processedImage.gradientFilter();
-      return this.getImageDataURL();
-    } catch (error) {
-      console.error('Gradient filter error:', error);
-      throw error;
-    }
+    return this.applySobelFilter();
   }
 
   /**
    * تیزسازی (Sharpen)
    */
   applySharpen(factor = 1) {
-    if (!this.processedImage) return;
-    try {
-      // Unsharp mask technique
-      const blurred = this.processedImage.gaussianFilter({ sigma: 1.0 });
+    if (!this.currentImageData) return;
 
-      // تفاضل
-      const sharpened = this.processedImage.clone();
-      for (let i = 0; i < sharpened.data.length; i++) {
-        const diff = this.processedImage.data[i] - blurred.data[i];
-        sharpened.data[i] = Math.max(0, Math.min(255,
-          this.processedImage.data[i] + factor * diff
-        ));
+    const data = this.currentImageData.data;
+    const width = this.currentImageData.width;
+    const height = this.currentImageData.height;
+    const result = this.cloneImageData(this.currentImageData);
+
+    // Sharpen kernel
+    const kernel = [
+      [0, -1, 0],
+      [-1, 5, -1],
+      [0, -1, 0]
+    ];
+
+    for (let y = 1; y < height - 1; y++) {
+      for (let x = 1; x < width - 1; x++) {
+        for (let c = 0; c < 3; c++) { // RGB channels
+          let sum = 0;
+
+          for (let ky = -1; ky <= 1; ky++) {
+            for (let kx = -1; kx <= 1; kx++) {
+              const idx = ((y + ky) * width + (x + kx)) * 4 + c;
+              sum += data[idx] * kernel[ky + 1][kx + 1] * factor;
+            }
+          }
+
+          const idx = (y * width + x) * 4 + c;
+          result.data[idx] = Math.max(0, Math.min(255, sum));
+        }
+        result.data[(y * width + x) * 4 + 3] = 255; // Alpha
       }
-
-      this.processedImage = sharpened;
-      return this.getImageDataURL();
-    } catch (error) {
-      console.error('Sharpen error:', error);
-      throw error;
     }
+
+    this.currentImageData = result;
+    return this.getImageDataURL();
   }
 
   /**
    * یکسان‌سازی هیستوگرام (Histogram Equalization)
    */
   applyHistogramEqualization() {
-    if (!this.processedImage) return;
-    try {
-      this.processedImage = this.processedImage.equalize();
-      return this.getImageDataURL();
-    } catch (error) {
-      console.error('Histogram equalization error:', error);
-      throw error;
+    if (!this.currentImageData) return;
+
+    const data = this.currentImageData.data;
+    const pixelCount = this.currentImageData.width * this.currentImageData.height;
+
+    // محاسبه هیستوگرام
+    const histogram = new Array(256).fill(0);
+    for (let i = 0; i < data.length; i += 4) {
+      const gray = Math.floor((data[i] + data[i + 1] + data[i + 2]) / 3);
+      histogram[gray]++;
     }
+
+    // محاسبه CDF (Cumulative Distribution Function)
+    const cdf = new Array(256);
+    cdf[0] = histogram[0];
+    for (let i = 1; i < 256; i++) {
+      cdf[i] = cdf[i - 1] + histogram[i];
+    }
+
+    // نرمال‌سازی CDF
+    const cdfMin = cdf.find(val => val > 0);
+    const cdfNormalized = cdf.map(val =>
+      Math.round(((val - cdfMin) / (pixelCount - cdfMin)) * 255)
+    );
+
+    // اعمال تبدیل
+    for (let i = 0; i < data.length; i += 4) {
+      const gray = Math.floor((data[i] + data[i + 1] + data[i + 2]) / 3);
+      const newValue = cdfNormalized[gray];
+      data[i] = data[i + 1] = data[i + 2] = newValue;
+    }
+
+    return this.getImageDataURL();
   }
 
   /**
    * معکوس کردن (Invert)
    */
   applyInvert() {
-    if (!this.processedImage) return;
-    try {
-      this.processedImage = this.processedImage.invert();
-      return this.getImageDataURL();
-    } catch (error) {
-      console.error('Invert error:', error);
-      throw error;
+    if (!this.currentImageData) return;
+
+    const data = this.currentImageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = 255 - data[i];       // R
+      data[i + 1] = 255 - data[i + 1]; // G
+      data[i + 2] = 255 - data[i + 2]; // B
     }
+
+    return this.getImageDataURL();
   }
 
   /**
    * چرخش تصویر
    */
   applyRotation(angle) {
-    if (!this.processedImage) return;
-    try {
-      // تبدیل زاویه به رادیان
-      const radians = (angle * Math.PI) / 180;
-      this.processedImage = this.processedImage.rotate(radians);
-      return this.getImageDataURL();
-    } catch (error) {
-      console.error('Rotation error:', error);
-      throw error;
-    }
-  }
+    if (!this.currentImageData) return;
 
-  /**
-   * آینه کردن افقی
-   */
-  applyFlipHorizontal() {
-    if (!this.processedImage) return;
-    try {
-      this.processedImage = this.processedImage.flipX();
-      return this.getImageDataURL();
-    } catch (error) {
-      console.error('Flip horizontal error:', error);
-      throw error;
-    }
-  }
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
 
-  /**
-   * آینه کردن عمودی
-   */
-  applyFlipVertical() {
-    if (!this.processedImage) return;
-    try {
-      this.processedImage = this.processedImage.flipY();
-      return this.getImageDataURL();
-    } catch (error) {
-      console.error('Flip vertical error:', error);
-      throw error;
-    }
+    // محاسبه ابعاد جدید
+    const radians = (angle * Math.PI) / 180;
+    const cos = Math.abs(Math.cos(radians));
+    const sin = Math.abs(Math.sin(radians));
+    const newWidth = this.canvas.height * sin + this.canvas.width * cos;
+    const newHeight = this.canvas.height * cos + this.canvas.width * sin;
+
+    tempCanvas.width = newWidth;
+    tempCanvas.height = newHeight;
+
+    // چرخش
+    tempCtx.translate(newWidth / 2, newHeight / 2);
+    tempCtx.rotate(radians);
+    tempCtx.putImageData(this.currentImageData, -this.canvas.width / 2, -this.canvas.height / 2);
+
+    this.canvas.width = newWidth;
+    this.canvas.height = newHeight;
+    this.currentImageData = tempCtx.getImageData(0, 0, newWidth, newHeight);
+
+    return this.getImageDataURL();
   }
 
   /**
    * تنظیم روشنایی
    */
   adjustBrightness(value) {
-    if (!this.processedImage) return;
-    try {
-      // value: -100 to 100
-      const adjusted = this.processedImage.clone();
-      const delta = (value / 100) * 128; // تبدیل به مقیاس 0-128
+    if (!this.currentImageData) return;
 
-      for (let i = 0; i < adjusted.data.length; i++) {
-        adjusted.data[i] = Math.max(0, Math.min(255, adjusted.data[i] + delta));
-      }
+    const data = this.currentImageData.data;
+    const delta = (value / 100) * 128;
 
-      this.processedImage = adjusted;
-      return this.getImageDataURL();
-    } catch (error) {
-      console.error('Brightness adjustment error:', error);
-      throw error;
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = Math.max(0, Math.min(255, data[i] + delta));       // R
+      data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + delta)); // G
+      data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + delta)); // B
     }
+
+    return this.getImageDataURL();
   }
 
   /**
    * تنظیم کنتراست
    */
   adjustContrast(value) {
-    if (!this.processedImage) return;
-    try {
-      // value: -100 to 100
-      const factor = (259 * (value + 255)) / (255 * (259 - value));
-      const adjusted = this.processedImage.clone();
+    if (!this.currentImageData) return;
 
-      for (let i = 0; i < adjusted.data.length; i++) {
-        const newValue = factor * (adjusted.data[i] - 128) + 128;
-        adjusted.data[i] = Math.max(0, Math.min(255, newValue));
-      }
+    const data = this.currentImageData.data;
+    const factor = (259 * (value + 255)) / (255 * (259 - value));
 
-      this.processedImage = adjusted;
-      return this.getImageDataURL();
-    } catch (error) {
-      console.error('Contrast adjustment error:', error);
-      throw error;
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = Math.max(0, Math.min(255, factor * (data[i] - 128) + 128));       // R
+      data[i + 1] = Math.max(0, Math.min(255, factor * (data[i + 1] - 128) + 128)); // G
+      data[i + 2] = Math.max(0, Math.min(255, factor * (data[i + 2] - 128) + 128)); // B
     }
-  }
 
-  /**
-   * Threshold (آستانه‌گذاری)
-   */
-  applyThreshold(threshold = 128) {
-    if (!this.processedImage) return;
-    try {
-      // تبدیل به grayscale اگر نیست
-      let gray = this.processedImage.grey();
-
-      const binary = gray.clone();
-      for (let i = 0; i < binary.data.length; i++) {
-        binary.data[i] = binary.data[i] > threshold ? 255 : 0;
-      }
-
-      this.processedImage = binary;
-      return this.getImageDataURL();
-    } catch (error) {
-      console.error('Threshold error:', error);
-      throw error;
-    }
+    return this.getImageDataURL();
   }
 
   /**
    * تبدیل به Grayscale
    */
   convertToGrayscale() {
-    if (!this.processedImage) return;
-    try {
-      this.processedImage = this.processedImage.grey();
-      return this.getImageDataURL();
-    } catch (error) {
-      console.error('Grayscale conversion error:', error);
-      throw error;
+    if (!this.currentImageData) return;
+
+    const data = this.currentImageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      data[i] = data[i + 1] = data[i + 2] = gray;
     }
+
+    return this.getImageDataURL();
   }
 
   /**
-   * Morphological Operations - Erosion
+   * Erosion (ساده‌سازی شده)
    */
   applyErosion(kernelSize = 3) {
-    if (!this.processedImage) return;
-    try {
-      // ساده‌سازی شده - برای morphology واقعی باید از OpenCV استفاده شود
-      this.processedImage = this.processedImage.erode({
-        iterations: 1
-      });
-      return this.getImageDataURL();
-    } catch (error) {
-      console.error('Erosion error:', error);
-      throw error;
+    if (!this.currentImageData) return;
+
+    const data = this.currentImageData.data;
+    const width = this.currentImageData.width;
+    const height = this.currentImageData.height;
+    const result = this.cloneImageData(this.currentImageData);
+    const radius = Math.floor(kernelSize / 2);
+
+    for (let y = radius; y < height - radius; y++) {
+      for (let x = radius; x < width - radius; x++) {
+        let minVal = 255;
+
+        for (let ky = -radius; ky <= radius; ky++) {
+          for (let kx = -radius; kx <= radius; kx++) {
+            const idx = ((y + ky) * width + (x + kx)) * 4;
+            const val = data[idx];
+            if (val < minVal) minVal = val;
+          }
+        }
+
+        const idx = (y * width + x) * 4;
+        result.data[idx] = result.data[idx + 1] = result.data[idx + 2] = minVal;
+      }
     }
+
+    this.currentImageData = result;
+    return this.getImageDataURL();
   }
 
   /**
-   * Morphological Operations - Dilation
+   * Dilation (ساده‌سازی شده)
    */
   applyDilation(kernelSize = 3) {
-    if (!this.processedImage) return;
-    try {
-      this.processedImage = this.processedImage.dilate({
-        iterations: 1
-      });
-      return this.getImageDataURL();
-    } catch (error) {
-      console.error('Dilation error:', error);
-      throw error;
+    if (!this.currentImageData) return;
+
+    const data = this.currentImageData.data;
+    const width = this.currentImageData.width;
+    const height = this.currentImageData.height;
+    const result = this.cloneImageData(this.currentImageData);
+    const radius = Math.floor(kernelSize / 2);
+
+    for (let y = radius; y < height - radius; y++) {
+      for (let x = radius; x < width - radius; x++) {
+        let maxVal = 0;
+
+        for (let ky = -radius; ky <= radius; ky++) {
+          for (let kx = -radius; kx <= radius; kx++) {
+            const idx = ((y + ky) * width + (x + kx)) * 4;
+            const val = data[idx];
+            if (val > maxVal) maxVal = val;
+          }
+        }
+
+        const idx = (y * width + x) * 4;
+        result.data[idx] = result.data[idx + 1] = result.data[idx + 2] = maxVal;
+      }
     }
+
+    this.currentImageData = result;
+    return this.getImageDataURL();
   }
 
   /**
-   * Crop تصویر
+   * Threshold
    */
-  cropImage(x, y, width, height) {
-    if (!this.processedImage) return;
-    try {
-      this.processedImage = this.processedImage.crop({
-        x: Math.floor(x),
-        y: Math.floor(y),
-        width: Math.floor(width),
-        height: Math.floor(height)
-      });
-      return this.getImageDataURL();
-    } catch (error) {
-      console.error('Crop error:', error);
-      throw error;
-    }
-  }
+  applyThreshold(threshold = 128) {
+    if (!this.currentImageData) return;
 
-  /**
-   * Resize تصویر
-   */
-  resizeImage(width, height) {
-    if (!this.processedImage) return;
-    try {
-      this.processedImage = this.processedImage.resize({
-        width: Math.floor(width),
-        height: Math.floor(height)
-      });
-      return this.getImageDataURL();
-    } catch (error) {
-      console.error('Resize error:', error);
-      throw error;
+    const data = this.currentImageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
+      const value = gray > threshold ? 255 : 0;
+      data[i] = data[i + 1] = data[i + 2] = value;
     }
+
+    return this.getImageDataURL();
   }
 
   /**
    * محاسبه هیستوگرام
    */
   calculateHistogram() {
-    if (!this.processedImage) return null;
-    try {
-      const histogram = this.processedImage.getHistogram();
-      return histogram;
-    } catch (error) {
-      console.error('Histogram calculation error:', error);
-      return null;
+    if (!this.currentImageData) return null;
+
+    const data = this.currentImageData.data;
+    const histogram = new Array(256).fill(0);
+
+    for (let i = 0; i < data.length; i += 4) {
+      const gray = Math.floor((data[i] + data[i + 1] + data[i + 2]) / 3);
+      histogram[gray]++;
     }
-  }
 
-  /**
-   * محاسبه آمار تصویر
-   */
-  calculateStatistics() {
-    if (!this.processedImage) return null;
-    try {
-      const stats = {
-        width: this.processedImage.width,
-        height: this.processedImage.height,
-        channels: this.processedImage.channels,
-        bitDepth: this.processedImage.bitDepth,
-        mean: this.processedImage.mean,
-        median: this.processedImage.median,
-        min: this.processedImage.min,
-        max: this.processedImage.max,
-        std: this.processedImage.std
-      };
-      return stats;
-    } catch (error) {
-      console.error('Statistics calculation error:', error);
-      return null;
-    }
-  }
-
-  /**
-   * ذخیره تصویر
-   */
-  async saveImage(filename = 'processed_image.png') {
-    if (!this.processedImage) return;
-    try {
-      const dataUrl = this.getImageDataURL();
-
-      // تبدیل data URL به blob
-      const response = await fetch(dataUrl);
-      const blob = await response.blob();
-
-      // ایجاد لینک دانلود
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      link.click();
-
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Save image error:', error);
-      throw error;
-    }
+    return histogram;
   }
 }
 

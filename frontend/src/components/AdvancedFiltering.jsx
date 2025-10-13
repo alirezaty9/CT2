@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Filter, Sliders, Sparkles, Zap } from 'lucide-react';
+import { useImageProcessing } from '../contexts/ImageProcessingContext';
 
 const AdvancedFiltering = ({ disabled = false, onApplyFilter }) => {
   const { t } = useTranslation();
+  const { applyFilter: applyImageFilter } = useImageProcessing();
 
   // نوع فیلتر فعال
   const [activeFilterType, setActiveFilterType] = useState('none');
@@ -75,7 +77,7 @@ const AdvancedFiltering = ({ disabled = false, onApplyFilter }) => {
   };
 
   // اعمال فیلتر
-  const applyFilter = () => {
+  const applyFilter = async () => {
     if (activeFilterType === 'none') {
       alert(t('selectFilterFirst') || 'Please select a filter first');
       return;
@@ -86,13 +88,81 @@ const AdvancedFiltering = ({ disabled = false, onApplyFilter }) => {
       settings: filterSettings[activeFilterType]
     };
 
-    console.log('Applying filter:', filterConfig);
+    console.log('🎨 [POST-PROCESSING] Applying filter:', filterConfig);
 
+    // ارسال به بکند (Qt)
     if (onApplyFilter) {
       onApplyFilter(filterConfig);
     }
 
-    alert(t('filterApplied') || `${activeFilterType} filter applied successfully!`);
+    // اعمال فیلتر روی BaslerDisplay از طریق ImageProcessingContext
+    try {
+      let filterType = null;
+      let params = {};
+
+      // تبدیل فیلترهای AdvancedFiltering به فیلترهای ImageProcessingContext
+      switch (activeFilterType) {
+        case 'denoising':
+          if (filterSettings.denoising.method === 'gaussian') {
+            filterType = 'gaussian';
+            params = { sigma: filterSettings.denoising.strength / 50 }; // scale 0-100 to 0-2
+          } else if (filterSettings.denoising.method === 'median') {
+            filterType = 'median';
+            params = { kernelSize: filterSettings.denoising.kernelSize };
+          } else {
+            // bilateral و nlm فعلاً پشتیبانی نمی‌شوند، از gaussian استفاده می‌کنیم
+            filterType = 'gaussian';
+            params = { sigma: filterSettings.denoising.strength / 50 };
+          }
+          break;
+
+        case 'sharpening':
+          filterType = 'sharpen';
+          params = { factor: filterSettings.sharpening.amount / 50 }; // scale 0-200 to 0-4
+          break;
+
+        case 'edgeEnhancement':
+          if (filterSettings.edgeEnhancement.method === 'sobel') {
+            filterType = 'sobel';
+          } else {
+            // سایر روش‌ها فعلاً از sobel استفاده می‌کنند
+            filterType = 'gradient';
+          }
+          break;
+
+        case 'histogramEqualization':
+          filterType = 'histogramEqualization';
+          break;
+
+        case 'morphology':
+          if (filterSettings.morphology.operation === 'opening' ||
+              filterSettings.morphology.operation === 'closing') {
+            // فعلاً erosion/dilation را به عنوان جایگزین استفاده می‌کنیم
+            filterType = filterSettings.morphology.operation === 'opening' ? 'erosion' : 'dilation';
+            params = { kernelSize: filterSettings.morphology.kernelSize };
+          }
+          break;
+
+        case 'wavelet':
+          console.log('⚠️ [POST-PROCESSING] Wavelet filter not yet implemented in frontend');
+          alert(t('waveletNotSupported') || 'Wavelet filter is not supported yet in frontend processing');
+          return;
+
+        default:
+          console.warn('⚠️ [POST-PROCESSING] Unknown filter type:', activeFilterType);
+          return;
+      }
+
+      if (filterType) {
+        console.log(`✅ [POST-PROCESSING] Applying ${filterType} to BaslerDisplay with params:`, params);
+        await applyImageFilter(filterType, params);
+        console.log(`✅ [POST-PROCESSING] Filter ${filterType} applied successfully`);
+        alert(t('filterApplied') || `${activeFilterType} filter applied successfully!`);
+      }
+    } catch (error) {
+      console.error('❌ [POST-PROCESSING] Error applying filter:', error);
+      alert(t('filterError') || 'Error applying filter');
+    }
   };
 
   // لیست انواع فیلترها
