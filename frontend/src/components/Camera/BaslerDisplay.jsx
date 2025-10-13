@@ -1,6 +1,10 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { fabric } from 'fabric';
 import { useCamera } from '../../contexts/CameraContext';
+import { useImageProcessing } from '../../contexts/ImageProcessingContext';
+import { useTranslation } from 'react-i18next';
+import { ChevronDown, ChevronUp, Filter, Sparkles, RotateCcw } from 'lucide-react';
+import imageProcessor from '../../utils/imageProcessing';
 
 const BaslerDisplay = () => {
   const canvasRef = useRef(null);
@@ -11,6 +15,26 @@ const BaslerDisplay = () => {
   const backgroundImageRef = useRef(null);
   const lastFrameRef = useRef(null);
   const lastSettingsRef = useRef(null);
+
+  // Image processing states
+  const [showProcessingPanel, setShowProcessingPanel] = useState(false);
+  const [activeFilters, setActiveFilters] = useState({
+    denoising: false,
+    sharpening: false,
+    edgeEnhancement: false,
+    histogramEq: false,
+    grayscale: false,
+    median: false,
+    sobel: false,
+    invert: false
+  });
+  const [processingParams, setProcessingParams] = useState({
+    gaussianSigma: 1.0,
+    sharpenFactor: 1.0,
+    brightness: 0,
+    contrast: 0,
+    rotation: 0
+  });
 
   const {
     cameras,
@@ -28,6 +52,47 @@ const BaslerDisplay = () => {
     wsStatus,
     panImage
   } = useCamera();
+
+  const { resetToOriginal } = useImageProcessing();
+  const { t } = useTranslation();
+
+  // Toggle filter
+  const toggleFilter = useCallback((filterName) => {
+    setActiveFilters(prev => ({
+      ...prev,
+      [filterName]: !prev[filterName]
+    }));
+  }, []);
+
+  // Update processing parameter
+  const updateParam = useCallback((paramName, value) => {
+    setProcessingParams(prev => ({
+      ...prev,
+      [paramName]: parseFloat(value)
+    }));
+  }, []);
+
+  // Reset all filters
+  const resetFilters = useCallback(() => {
+    setActiveFilters({
+      denoising: false,
+      sharpening: false,
+      edgeEnhancement: false,
+      histogramEq: false,
+      grayscale: false,
+      median: false,
+      sobel: false,
+      invert: false
+    });
+    setProcessingParams({
+      gaussianSigma: 1.0,
+      sharpenFactor: 1.0,
+      brightness: 0,
+      contrast: 0,
+      rotation: 0
+    });
+    resetToOriginal();
+  }, [resetToOriginal]);
 
   // Fabric.js event handlers - defined before initialization
   const handleFabricPathCreated = useCallback((e) => {
@@ -165,26 +230,102 @@ const BaslerDisplay = () => {
     }
   }, []);
 
-  // Update background image in Fabric.js (only for new frames)
-  const updateFabricBackground = useCallback(() => {
+  // Update background image in Fabric.js with processing (for new frames OR filter changes)
+  const updateFabricBackground = useCallback(async () => {
     if (!fabricCanvasRef.current || !cameras.basler.currentFrame) return;
 
     const currentFrame = cameras.basler.currentFrame;
-    
-    // Check if frame actually changed
-    if (lastFrameRef.current === currentFrame) {
+
+    // Create a signature of current state (frame + filters)
+    const currentState = JSON.stringify({ frame: currentFrame.substring(0, 100), activeFilters, processingParams });
+
+    // Check if frame or filters actually changed
+    if (lastFrameRef.current === currentState) {
       return; // No need to update
     }
-    
-    // Update ref
-    lastFrameRef.current = currentFrame;
-    console.log('🖼️ Updating Fabric.js background image');
 
-    fabric.Image.fromURL(currentFrame, (img) => {
+    // Update ref
+    lastFrameRef.current = currentState;
+    console.log('🖼️ Updating Fabric.js background image (frame or filter changed)');
+
+    // Check if any filters are active
+    const hasActiveFilters = Object.values(activeFilters).some(v => v) ||
+                            processingParams.brightness !== 0 ||
+                            processingParams.contrast !== 0 ||
+                            processingParams.rotation !== 0;
+
+    // Apply processing if filters are active
+    let imageToDisplay = currentFrame;
+    if (hasActiveFilters) {
+      try {
+        console.log('🎨 Applying filters:', activeFilters, processingParams);
+
+        // Load image directly into imageProcessor
+        await imageProcessor.loadImage(currentFrame);
+        console.log('✅ Image loaded into processor');
+
+        // Apply each active filter in sequence using imageProcessor directly
+        if (activeFilters.grayscale) {
+          imageProcessor.convertToGrayscale();
+          console.log('✅ Grayscale applied');
+        }
+        if (activeFilters.denoising) {
+          imageProcessor.applyGaussianFilter(processingParams.gaussianSigma);
+          console.log('✅ Gaussian applied');
+        }
+        if (activeFilters.median) {
+          imageProcessor.applyMedianFilter(3);
+          console.log('✅ Median applied');
+        }
+        if (activeFilters.sharpening) {
+          imageProcessor.applySharpen(processingParams.sharpenFactor);
+          console.log('✅ Sharpen applied');
+        }
+        if (activeFilters.sobel || activeFilters.edgeEnhancement) {
+          imageProcessor.applySobelFilter();
+          console.log('✅ Sobel applied');
+        }
+        if (activeFilters.histogramEq) {
+          imageProcessor.applyHistogramEqualization();
+          console.log('✅ Histogram Eq applied');
+        }
+        if (activeFilters.invert) {
+          imageProcessor.applyInvert();
+          console.log('✅ Invert applied');
+        }
+        if (processingParams.brightness !== 0) {
+          imageProcessor.adjustBrightness(processingParams.brightness);
+          console.log('✅ Brightness applied');
+        }
+        if (processingParams.contrast !== 0) {
+          imageProcessor.adjustContrast(processingParams.contrast);
+          console.log('✅ Contrast applied');
+        }
+        if (processingParams.rotation !== 0) {
+          imageProcessor.applyRotation(processingParams.rotation);
+          console.log('✅ Rotation applied');
+        }
+
+        // Get the final processed image as data URL
+        const finalProcessedImage = imageProcessor.getImageDataURL(true);
+        if (finalProcessedImage) {
+          imageToDisplay = finalProcessedImage;
+          console.log('✅ Using processed image:', imageToDisplay.substring(0, 50) + '...');
+        } else {
+          console.warn('⚠️ No processed image available, using original');
+        }
+      } catch (error) {
+        console.error('❌ Error processing image:', error);
+      }
+    } else {
+      console.log('ℹ️ No active filters, using original image');
+    }
+
+    fabric.Image.fromURL(imageToDisplay, (img) => {
       // Use current canvas dimensions if available, otherwise default to 640x480
       const currentWidth = fabricCanvasRef.current.width || 640;
       const currentHeight = fabricCanvasRef.current.height || 480;
-      
+
       img.set({
         left: 0,
         top: 0,
@@ -194,8 +335,8 @@ const BaslerDisplay = () => {
         evented: false,
         excludeFromExport: false
       });
-      
-      // Apply current image settings
+
+      // Apply current image settings from CameraContext
       const filters = [];
       if (imageSettings.brightness !== 100) {
         filters.push(new fabric.Image.filters.Brightness({ brightness: (imageSettings.brightness - 100) / 100 }));
@@ -206,13 +347,13 @@ const BaslerDisplay = () => {
       if (imageSettings.grayscale) {
         filters.push(new fabric.Image.filters.Grayscale());
       }
-      
+
       img.filters = filters;
       img.applyFilters();
-      
+
       fabricCanvasRef.current.setBackgroundImage(img, fabricCanvasRef.current.renderAll.bind(fabricCanvasRef.current));
     });
-  }, [cameras.basler.currentFrame, imageSettings.brightness, imageSettings.contrast, imageSettings.grayscale]);
+  }, [cameras.basler.currentFrame, imageSettings, activeFilters, processingParams]);
 
   // Simple tool setup - now handled by individual tool components
   const setupFabricTools = useCallback((canvas) => {
@@ -302,12 +443,12 @@ const BaslerDisplay = () => {
     }
   }, [activeTool, cameras.basler.currentFrame, updateFabricBackground]);
 
-  // Update background only when frame changes
+  // Update background when frame changes OR filters change
   useEffect(() => {
     if (fabricCanvasRef.current && cameras.basler.currentFrame) {
       updateFabricBackground();
     }
-  }, [cameras.basler.currentFrame]); // Only when frame changes, not settings
+  }, [cameras.basler.currentFrame, activeFilters, processingParams, updateFabricBackground]);
 
   // Listen for canvas resize events (e.g., after crop)
   useEffect(() => {
@@ -664,8 +805,211 @@ const BaslerDisplay = () => {
   }, []);
 
   return (
-    <div ref={containerRef} className="w-full h-full bg-black rounded-lg overflow-hidden relative flex justify-center items-center">
-      <img ref={imageRef} style={{ display: 'none' }} alt="Basler frame" />
+    <div ref={containerRef} className="w-full h-full bg-black rounded-lg overflow-hidden relative flex flex-col">
+
+      {/* Processing Panel - Collapsible */}
+      <div className="absolute top-0 left-0 right-0 z-10">
+        {/* Panel Toggle Button */}
+        <button
+          onClick={() => setShowProcessingPanel(!showProcessingPanel)}
+          className="w-full bg-gradient-to-b from-black/90 to-black/70 text-white px-4 py-2 flex items-center justify-between hover:from-black/95 hover:to-black/75 transition-all"
+        >
+          <div className="flex items-center gap-2">
+            <Filter size={18} className="text-primary" />
+            <span className="text-sm font-medium">{t('imageProcessing') || 'پردازش تصویر'}</span>
+            {Object.values(activeFilters).some(v => v) && (
+              <span className="text-xs bg-primary text-white px-2 py-0.5 rounded-full">
+                {Object.values(activeFilters).filter(v => v).length}
+              </span>
+            )}
+          </div>
+          {showProcessingPanel ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+        </button>
+
+        {/* Processing Controls */}
+        {showProcessingPanel && (
+          <div className="bg-gradient-to-b from-black/95 to-black/85 text-white p-4 max-h-96 overflow-y-auto backdrop-blur-sm">
+
+            {/* Quick Filters */}
+            <div className="mb-4">
+              <div className="text-xs font-semibold mb-2 flex items-center gap-2">
+                <Sparkles size={14} className="text-primary" />
+                {t('quickFilters') || 'فیلترهای سریع'}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <button
+                  onClick={() => toggleFilter('grayscale')}
+                  className={`px-3 py-2 rounded text-xs font-medium transition-all ${
+                    activeFilters.grayscale
+                      ? 'bg-primary text-white shadow-lg'
+                      : 'bg-white/10 hover:bg-white/20 text-white/80'
+                  }`}
+                >
+                  {t('grayscale') || 'خاکستری'}
+                </button>
+                <button
+                  onClick={() => toggleFilter('denoising')}
+                  className={`px-3 py-2 rounded text-xs font-medium transition-all ${
+                    activeFilters.denoising
+                      ? 'bg-primary text-white shadow-lg'
+                      : 'bg-white/10 hover:bg-white/20 text-white/80'
+                  }`}
+                >
+                  {t('denoising') || 'حذف نویز'}
+                </button>
+                <button
+                  onClick={() => toggleFilter('sharpening')}
+                  className={`px-3 py-2 rounded text-xs font-medium transition-all ${
+                    activeFilters.sharpening
+                      ? 'bg-primary text-white shadow-lg'
+                      : 'bg-white/10 hover:bg-white/20 text-white/80'
+                  }`}
+                >
+                  {t('sharpening') || 'تیزسازی'}
+                </button>
+                <button
+                  onClick={() => toggleFilter('sobel')}
+                  className={`px-3 py-2 rounded text-xs font-medium transition-all ${
+                    activeFilters.sobel
+                      ? 'bg-primary text-white shadow-lg'
+                      : 'bg-white/10 hover:bg-white/20 text-white/80'
+                  }`}
+                >
+                  {t('edgeDetection') || 'تشخیص لبه'}
+                </button>
+                <button
+                  onClick={() => toggleFilter('median')}
+                  className={`px-3 py-2 rounded text-xs font-medium transition-all ${
+                    activeFilters.median
+                      ? 'bg-primary text-white shadow-lg'
+                      : 'bg-white/10 hover:bg-white/20 text-white/80'
+                  }`}
+                >
+                  {t('medianFilter') || 'فیلتر میانه'}
+                </button>
+                <button
+                  onClick={() => toggleFilter('histogramEq')}
+                  className={`px-3 py-2 rounded text-xs font-medium transition-all ${
+                    activeFilters.histogramEq
+                      ? 'bg-primary text-white shadow-lg'
+                      : 'bg-white/10 hover:bg-white/20 text-white/80'
+                  }`}
+                >
+                  {t('histogramEq') || 'هیستوگرام'}
+                </button>
+                <button
+                  onClick={() => toggleFilter('invert')}
+                  className={`px-3 py-2 rounded text-xs font-medium transition-all ${
+                    activeFilters.invert
+                      ? 'bg-primary text-white shadow-lg'
+                      : 'bg-white/10 hover:bg-white/20 text-white/80'
+                  }`}
+                >
+                  {t('invert') || 'معکوس'}
+                </button>
+                <button
+                  onClick={resetFilters}
+                  className="px-3 py-2 rounded text-xs font-medium bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-all flex items-center justify-center gap-1"
+                >
+                  <RotateCcw size={12} />
+                  {t('reset') || 'ریست'}
+                </button>
+              </div>
+            </div>
+
+            {/* Advanced Parameters */}
+            <div className="space-y-3">
+              {/* Gaussian Sigma */}
+              {activeFilters.denoising && (
+                <div>
+                  <label className="text-xs text-white/70 mb-1 block">
+                    {t('gaussianSigma') || 'مقدار Gaussian'}: {processingParams.gaussianSigma}
+                  </label>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="5"
+                    step="0.1"
+                    value={processingParams.gaussianSigma}
+                    onChange={(e) => updateParam('gaussianSigma', e.target.value)}
+                    className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer"
+                  />
+                </div>
+              )}
+
+              {/* Sharpen Factor */}
+              {activeFilters.sharpening && (
+                <div>
+                  <label className="text-xs text-white/70 mb-1 block">
+                    {t('sharpenFactor') || 'مقدار تیزسازی'}: {processingParams.sharpenFactor}
+                  </label>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="3"
+                    step="0.1"
+                    value={processingParams.sharpenFactor}
+                    onChange={(e) => updateParam('sharpenFactor', e.target.value)}
+                    className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer"
+                  />
+                </div>
+              )}
+
+              {/* Brightness */}
+              <div>
+                <label className="text-xs text-white/70 mb-1 block">
+                  {t('brightness') || 'روشنایی'}: {processingParams.brightness}
+                </label>
+                <input
+                  type="range"
+                  min="-100"
+                  max="100"
+                  step="5"
+                  value={processingParams.brightness}
+                  onChange={(e) => updateParam('brightness', e.target.value)}
+                  className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer"
+                />
+              </div>
+
+              {/* Contrast */}
+              <div>
+                <label className="text-xs text-white/70 mb-1 block">
+                  {t('contrast') || 'کنتراست'}: {processingParams.contrast}
+                </label>
+                <input
+                  type="range"
+                  min="-100"
+                  max="100"
+                  step="5"
+                  value={processingParams.contrast}
+                  onChange={(e) => updateParam('contrast', e.target.value)}
+                  className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer"
+                />
+              </div>
+
+              {/* Rotation */}
+              <div>
+                <label className="text-xs text-white/70 mb-1 block">
+                  {t('rotation') || 'چرخش'}: {processingParams.rotation}°
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="360"
+                  step="15"
+                  value={processingParams.rotation}
+                  onChange={(e) => updateParam('rotation', e.target.value)}
+                  className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Canvas Display */}
+      <div className="flex-1 flex justify-center items-center relative">
+        <img ref={imageRef} style={{ display: 'none' }} alt="Basler frame" />
       <canvas
         ref={canvasRef}
         width={640}
@@ -726,6 +1070,7 @@ const BaslerDisplay = () => {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 };

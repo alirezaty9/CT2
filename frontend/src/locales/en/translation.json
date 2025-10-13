@@ -410,5 +410,12 @@
   "adjustments": "Adjustments",
   "invert": "Invert",
   "flipVertical": "Flip Vertical",
-  "contrast": "Contrast"
+  "contrast": "Contrast",
+  "processing": "Processing",
+  "autoProcess": "Auto Process",
+  "filters": "Filters",
+  "waitingForImage": "Waiting for image",
+  "applyFilters": "Apply Filters",
+  "liveProcessing": "Live Processing",
+  "imageProcessing": "Image Processing"
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import EnhancedBaslerDisplay from '../components/Camera/EnhancedBaslerDisplay';
+import BaslerDisplay from '../components/Camera/BaslerDisplay';
 import PageContainer from '../components/common/PageContainer';
 
 /**
@@ -7,12 +7,12 @@ import PageContainer from '../components/common/PageContainer';
  */
 const CanvasTest = () => {
   return (
-    <PageContainer 
+    <PageContainer
       title="تست Canvas پیشرفته"
       description="آزمایش ابزارهای رسم و ویرایش با کتابخانه‌های حرفه‌ای"
     >
       <div className="h-full">
-        <EnhancedBaslerDisplay />
+        <BaslerDisplay />
       </div>
     </PageContainer>
   );

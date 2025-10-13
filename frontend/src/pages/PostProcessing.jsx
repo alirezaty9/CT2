@@ -20,7 +20,6 @@ import { useFormPage } from '../hooks/useFormPage';
 import ImageQualityAssessment from '../components/ImageQualityAssessment';
 import DetectorConfiguration from '../components/DetectorConfiguration';
 import AdvancedFiltering from '../components/AdvancedFiltering';
-import RealTimeImageProcessor from '../components/RealTimeImageProcessor';
 
 const PostProcessing = () => {
   const { t, i18n } = useTranslation();
@@ -129,9 +128,6 @@ const PostProcessing = () => {
     <PageContainer>
       {/* Connection Status */}
       <ConnectionStatus icon={Sparkles} />
-
-      {/* Real-time Image Processor - پردازش واقعی تصویر */}
-      <RealTimeImageProcessor />
 
       {/* Image Quality Assessment - مورد 16 */}
       <ImageQualityAssessment disabled={!isConnected} />

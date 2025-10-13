@@ -408,5 +408,12 @@
   "adjustments": "تنظیمات",
   "invert": "معکوس",
   "flipVertical": "آینه عمودی",
-  "contrast": "کنتراست"
+  "contrast": "کنتراست",
+  "processing": "در حال پردازش",
+  "autoProcess": "پردازش خودکار",
+  "filters": "فیلترها",
+  "waitingForImage": "در انتظار تصویر",
+  "applyFilters": "اعمال فیلترها",
+  "liveProcessing": "پردازش زنده",
+  "imageProcessing": "پردازش تصویر"
 }
