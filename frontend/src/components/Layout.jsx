@@ -21,6 +21,7 @@ import BaslerDisplay from "./Camera/BaslerDisplay";
 import MonitoringDisplay from "./Camera/MonitoringDisplay";
 import HistogramDisplay from "./HistogramDisplay";
 import { useXray } from "../contexts/XrayContext";
+import debugLogger from "../utils/debugLogger";
 
 // تب‌های بالا
 const tabs = [
@@ -113,7 +114,10 @@ const SystemStatusBar = ({ t, isPowerOn, onPowerOn, onPowerOff }) => (
 
 // کامپوننت اصلی Layout
 const Layout = () => {
+  // Log render with current route
   const location = useLocation();
+  debugLogger.logRender('Layout', { route: location.pathname });
+
   const defaultActive = location.pathname.includes("settings")
     ? "Settings"
     : null;
@@ -263,4 +267,4 @@ const Layout = () => {
   );
 };
 
-export default Layout;
+export default React.memo(Layout);

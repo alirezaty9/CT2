@@ -2,8 +2,12 @@ import React, { useRef, useEffect, useState } from 'react';
 import { useHistogram } from '../contexts/HistogramContext';
 import { useFormData } from '../contexts/FormDataContext';
 import { BarChart3 } from 'lucide-react';
+import debugLogger from '../utils/debugLogger';
 
 const HistogramDisplay = () => {
+  // Log render
+  debugLogger.logRender('HistogramDisplay');
+
   const { histogramData, selectedPoint, currentChannel, selectionRegion } = useHistogram();
   const { formData } = useFormData();
   const canvasRef = useRef(null);
@@ -314,4 +318,4 @@ const HistogramDisplay = () => {
   );
 };
 
-export default HistogramDisplay;
+export default React.memo(HistogramDisplay);

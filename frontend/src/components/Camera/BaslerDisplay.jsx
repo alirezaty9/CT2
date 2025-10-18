@@ -5,8 +5,12 @@ import { useImageProcessing } from '../../contexts/ImageProcessingContext';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronUp, Filter, Sparkles, RotateCcw } from 'lucide-react';
 import imageProcessor from '../../utils/imageProcessing';
+import debugLogger from '../../utils/debugLogger';
 
 const BaslerDisplay = () => {
+  // Log render
+  debugLogger.logRender('BaslerDisplay');
+
   const canvasRef = useRef(null);
   const fabricCanvasRef = useRef(null);
   const imageRef = useRef(null);
@@ -38,6 +42,7 @@ const BaslerDisplay = () => {
 
   const {
     cameras,
+    addFrameCallback,
     activeTool,
     drawings,
     toolDrawings,
@@ -55,6 +60,29 @@ const BaslerDisplay = () => {
 
   const { resetToOriginal } = useImageProcessing();
   const { t } = useTranslation();
+
+  // استفاده از ref برای ذخیره آخرین frame بدون re-render
+  const lastProcessedFrameRef = useRef(null);
+
+  // Direct frame update via callback - NO state change!
+  useEffect(() => {
+    const handleBaslerFrame = (channel) => {
+      if (channel !== 'basler') return;
+
+      const frame = cameras.basler.currentFrame;
+      if (!frame || frame === lastProcessedFrameRef.current) return;
+
+      lastProcessedFrameRef.current = frame;
+
+      // فقط Fabric canvas رو آپدیت کن - بدون state update!
+      if (fabricCanvasRef.current) {
+        updateFabricBackground();
+      }
+    };
+
+    const unsubscribe = addFrameCallback(handleBaslerFrame);
+    return () => unsubscribe();
+  }, [cameras, addFrameCallback]);
 
   // Toggle filter
   const toggleFilter = useCallback((filterName) => {
@@ -207,9 +235,8 @@ const BaslerDisplay = () => {
 
   // Update background image in Fabric.js with processing (for new frames OR filter changes)
   const updateFabricBackground = useCallback(async () => {
-    if (!fabricCanvasRef.current || !cameras.basler.currentFrame) return;
-
     const currentFrame = cameras.basler.currentFrame;
+    if (!fabricCanvasRef.current || !currentFrame) return;
 
     // Create a signature of current state (frame + filters)
     const currentState = JSON.stringify({ frame: currentFrame.substring(0, 100), activeFilters, processingParams });
@@ -342,7 +369,7 @@ const BaslerDisplay = () => {
 
       fabricCanvasRef.current.setBackgroundImage(img, fabricCanvasRef.current.renderAll.bind(fabricCanvasRef.current));
     });
-  }, [cameras.basler.currentFrame, imageSettings, activeFilters, processingParams]);
+  }, [imageSettings, activeFilters, processingParams, cameras]);
 
   // Simple tool setup - now handled by individual tool components
   const setupFabricTools = useCallback((canvas) => {
@@ -423,14 +450,14 @@ const BaslerDisplay = () => {
 
       return () => clearTimeout(timeoutId);
     }
-  }, [activeTool, cameras.basler.currentFrame, updateFabricBackground]);
+  }, [activeTool, updateFabricBackground, cameras]);
 
   // Update background when frame changes OR filters change
   useEffect(() => {
     if (fabricCanvasRef.current && cameras.basler.currentFrame) {
       updateFabricBackground();
     }
-  }, [cameras.basler.currentFrame, activeFilters, processingParams, updateFabricBackground]);
+  }, [activeFilters, processingParams, updateFabricBackground, cameras]);
 
   // Listen for canvas resize events (e.g., after crop)
   useEffect(() => {
@@ -467,7 +494,7 @@ const BaslerDisplay = () => {
 
       return () => clearTimeout(timeoutId);
     }
-  }, [activeTool, cameras.basler.currentFrame]);
+  }, [activeTool, cameras]);
 
   // Update only image filters without reloading background
   const updateImageFilters = useCallback(() => {
@@ -644,7 +671,7 @@ const BaslerDisplay = () => {
         eraserTool.renderPreview(ctx, null, imageSettings);
       }
     }
-  }, [cameras.basler.currentFrame, drawings, toolDrawings, isDrawing, currentPath, activeTool, imageSettings]);
+  }, [drawings, toolDrawings, isDrawing, currentPath, activeTool, imageSettings, cameras]);
 
 
   // تبدیل موقعیت ماوس به مختصات واقعی canvas - بهبود یافته
@@ -758,7 +785,7 @@ const BaslerDisplay = () => {
         console.error('❌ Error loading Basler image:', error);
       };
     }
-  }, [cameras.basler.currentFrame, redrawCanvas]);
+  }, [redrawCanvas, cameras]);
 
   // به‌روزرسانی Canvas
   useEffect(() => {
@@ -1046,4 +1073,4 @@ const BaslerDisplay = () => {
   );
 };
 
-export default BaslerDisplay;
+export default React.memo(BaslerDisplay);

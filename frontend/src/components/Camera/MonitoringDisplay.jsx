@@ -1,17 +1,29 @@
 // src/components/Camera/MonitoringDisplay.jsx
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useCamera } from '../../contexts/CameraContext';
+import debugLogger from '../../utils/debugLogger';
 
 const MonitoringDisplay = () => {
-  const imgRef = useRef(null);
-  const { cameras, wsStatus } = useCamera();      // ✅ دریافت اطلاعات دوربین‌ها و وضعیت WebSocket
+  // Log render
+  debugLogger.logRender('MonitoringDisplay');
 
-  // 🔄 EFFECT: وقتی frame جدید میاد، تصویر رو update کن
+  const imgRef = useRef(null);
+  const { cameras, wsStatus, addFrameCallback } = useCamera();
+
+  // Direct DOM manipulation - no state updates!
   useEffect(() => {
-    if (imgRef.current && cameras.monitoring.currentFrame) {
-      imgRef.current.src = cameras.monitoring.currentFrame;
-    }
-  }, [cameras.monitoring.currentFrame]);
+    const updateFrame = (channel) => {
+      if (channel === 'monitoring' && imgRef.current) {
+        const frame = cameras.monitoring.currentFrame;
+        if (frame) {
+          imgRef.current.src = frame;
+        }
+      }
+    };
+
+    const unsubscribe = addFrameCallback(updateFrame);
+    return () => unsubscribe();
+  }, [cameras, addFrameCallback]);
 
   return (
     <div className="w-full h-full bg-black rounded-lg overflow-hidden relative">
@@ -69,4 +81,4 @@ const MonitoringDisplay = () => {
   );
 };
 
-export default MonitoringDisplay;
+export default React.memo(MonitoringDisplay);

@@ -1,27 +1,48 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useWebSocket } from './WebSocketContext';
+import debugLogger from '../utils/debugLogger';
 
 const CameraContext = createContext();
 
 export const CameraProvider = ({ children }) => {
-  // Enhanced state for cameras with performance tracking
-  const [cameras, setCameras] = useState({
-    basler: { 
-      currentFrame: null, 
-      isConnected: false, 
+  // Get WebSocket context
+  const { isConnected, connectionStatus, addMessageCallback } = useWebSocket();
+
+  // Log render
+  debugLogger.logRender('CameraProvider', { connectionStatus });
+
+  // Use refs for frame data to avoid re-renders on every frame
+  const cameraFramesRef = useRef({
+    basler: {
+      currentFrame: null,
       lastUpdate: 0,
       frameCount: 0,
       avgFps: 0,
       lastFpsCalculation: 0
     },
-    monitoring: { 
-      currentFrame: null, 
-      isConnected: false, 
+    monitoring: {
+      currentFrame: null,
       lastUpdate: 0,
       frameCount: 0,
       avgFps: 0,
       lastFpsCalculation: 0
     }
   });
+
+  // Lightweight state for connection status only (not frames)
+  const [cameraStatus, setCameraStatus] = useState({
+    basler: { isConnected: false },
+    monitoring: { isConnected: false }
+  });
+
+  // Track connection status to avoid unnecessary state updates
+  const connectionStatusRef = useRef({
+    basler: false,
+    monitoring: false
+  });
+
+  // Frame update callbacks - components can register to be notified of new frames
+  const frameCallbacksRef = useRef(new Set());
 
   // State برای ابزارها
   const [activeTool, setActiveTool] = useState(null);
@@ -30,7 +51,7 @@ export const CameraProvider = ({ children }) => {
   const [drawings, setDrawings] = useState([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentPath, setCurrentPath] = useState([]);
-  
+
   // State برای ToolManager drawings
   const [toolDrawings, setToolDrawings] = useState([]);
 
@@ -51,161 +72,112 @@ export const CameraProvider = ({ children }) => {
   // State برای تاریخچه تغییرات
   const [history, setHistory] = useState([]);
 
-  // State برای WebSocket
-  const [wsStatus, setWsStatus] = useState('disconnected');
-
-  // Enhanced WebSocket setup with reconnection and better error handling
+  // Handle WebSocket messages for camera frames
   useEffect(() => {
-    let ws = null;
-    let reconnectAttempts = 0;
-    let reconnectTimeout = null;
-    let isUnmounted = false;
-    
-    const maxReconnectAttempts = 10;
-    const baseReconnectDelay = 1000;
-
-    const connect = () => {
-      if (isUnmounted) return;
-      
-      setWsStatus('connecting');
-      ws = new WebSocket('ws://localhost:12345');
-      ws.binaryType = 'arraybuffer';
-
-      ws.onopen = () => {
-        if (isUnmounted) return;
-        
-        console.log('✅ WebSocket connected successfully');
-        setWsStatus('connected');
-        setCameras(prev => ({
-          ...prev,
-          basler: { ...prev.basler, isConnected: true },
-          monitoring: { ...prev.monitoring, isConnected: true }
-        }));
-        reconnectAttempts = 0;
-      };
-
-      ws.onmessage = (event) => {
-        if (isUnmounted) return;
-        
-        try {
-          const message = event.data;
-          
-          // Handle response messages
-          if (typeof message === 'string' && message.startsWith('response:')) {
-            console.log('Backend Response:', message.slice(9));
-            return;
-          }
-          
-          if (typeof message !== 'string') return;
-
-          const colonIndex = message.indexOf(':');
-          if (colonIndex === -1) return;
-
-          const channel = message.substring(0, colonIndex);
-          const base64Data = message.substring(colonIndex + 1);
-          if (!base64Data) return;
-
-          // Validate channel
-          if (!['basler', 'monitoring'].includes(channel)) {
-            console.warn('Unknown channel:', channel);
-            return;
-          }
-
-          const frameData = `data:image/jpeg;base64,${base64Data}`;
-          const now = Date.now();
-          
-          setCameras(prev => {
-            const currentChannel = prev[channel];
-            const newFrameCount = currentChannel.frameCount + 1;
-            
-            // Calculate FPS every 5 seconds
-            let avgFps = currentChannel.avgFps;
-            let lastFpsCalculation = currentChannel.lastFpsCalculation;
-            
-            if (now - lastFpsCalculation >= 5000) { // 5 seconds
-              if (lastFpsCalculation > 0) {
-                const timeDiff = (now - lastFpsCalculation) / 1000;
-                const framesSinceLastCalc = newFrameCount - (currentChannel.frameCount - newFrameCount + 1);
-                avgFps = Math.round((framesSinceLastCalc / timeDiff) * 10) / 10;
-              }
-              lastFpsCalculation = now;
-            }
-            
-            return {
-              ...prev,
-              [channel]: {
-                currentFrame: frameData,
-                isConnected: true,
-                lastUpdate: now,
-                frameCount: newFrameCount,
-                avgFps,
-                lastFpsCalculation
-              }
-            };
-          });
-          
-        } catch (error) {
-          console.error('❌ Error processing WebSocket message:', error);
+    const handleCameraMessage = (message) => {
+      try {
+        // Handle response messages
+        if (typeof message === 'string' && message.startsWith('response:')) {
+          console.log('Backend Response:', message.slice(9));
+          return;
         }
-      };
 
-      ws.onerror = (error) => {
-        console.error('❌ WebSocket error:', error);
-        setWsStatus('error');
-      };
+        if (typeof message !== 'string') return;
 
-      ws.onclose = (event) => {
-        if (isUnmounted) return;
-        
-        console.warn('⚠️ WebSocket disconnected:', event.code, event.reason);
-        setWsStatus('disconnected');
-        setCameras(prev => ({
-          ...prev,
-          basler: { 
-            ...prev.basler, 
-            isConnected: false,
-            currentFrame: null // Clear frame on disconnect
-          },
-          monitoring: { 
-            ...prev.monitoring, 
-            isConnected: false,
-            currentFrame: null // Clear frame on disconnect
-          }
-        }));
+        const colonIndex = message.indexOf(':');
+        if (colonIndex === -1) return;
 
-        // Attempt reconnection if not intentionally closed
-        if (event.code !== 1000 && reconnectAttempts < maxReconnectAttempts) {
-          const delay = Math.min(10000, baseReconnectDelay * Math.pow(2, reconnectAttempts));
-          console.log(`🔄 Reconnecting in ${delay / 1000}s... (attempt ${reconnectAttempts + 1}/${maxReconnectAttempts})`);
-          
-          setWsStatus('reconnecting');
-          reconnectTimeout = setTimeout(() => {
-            if (!isUnmounted) {
-              reconnectAttempts++;
-              connect();
-            }
-          }, delay);
-        } else if (reconnectAttempts >= maxReconnectAttempts) {
-          console.error('❌ Max reconnection attempts reached');
-          setWsStatus('failed');
+        const channel = message.substring(0, colonIndex);
+        const base64Data = message.substring(colonIndex + 1);
+        if (!base64Data) return;
+
+        // Validate channel
+        if (!['basler', 'monitoring'].includes(channel)) {
+          console.warn('Unknown channel:', channel);
+          return;
         }
-      };
+
+        const frameData = `data:image/jpeg;base64,${base64Data}`;
+        const now = Date.now();
+
+        // Update refs directly (no re-render)
+        const currentChannel = cameraFramesRef.current[channel];
+        const newFrameCount = currentChannel.frameCount + 1;
+
+        // Calculate FPS every 5 seconds
+        let avgFps = currentChannel.avgFps;
+        let lastFpsCalculation = currentChannel.lastFpsCalculation;
+
+        if (now - lastFpsCalculation >= 5000) { // 5 seconds
+          if (lastFpsCalculation > 0) {
+            const timeDiff = (now - lastFpsCalculation) / 1000;
+            const framesSinceLastCalc = newFrameCount - (currentChannel.frameCount - newFrameCount + 1);
+            avgFps = Math.round((framesSinceLastCalc / timeDiff) * 10) / 10;
+          }
+          lastFpsCalculation = now;
+        }
+
+        // Update ref data
+        cameraFramesRef.current[channel] = {
+          currentFrame: frameData,
+          lastUpdate: now,
+          frameCount: newFrameCount,
+          avgFps,
+          lastFpsCalculation
+        };
+
+        // Update connection status if needed (only once when connecting)
+        if (!connectionStatusRef.current[channel]) {
+          connectionStatusRef.current[channel] = true;
+          setCameraStatus(prev => ({
+            ...prev,
+            [channel]: { isConnected: true }
+          }));
+        }
+
+        // Notify registered components via callbacks (no re-render)
+        frameCallbacksRef.current.forEach(callback => {
+          try {
+            callback(channel);
+          } catch (err) {
+            console.error('Frame callback error:', err);
+          }
+        });
+
+      } catch (error) {
+        console.error('❌ Error processing camera message:', error);
+      }
     };
 
-    // Initial connection
-    connect();
+    // Register message callback
+    const unsubscribe = addMessageCallback(handleCameraMessage);
 
-    // Cleanup function
+    // Cleanup
     return () => {
-      isUnmounted = true;
-      if (reconnectTimeout) {
-        clearTimeout(reconnectTimeout);
-      }
-      if (ws && ws.readyState !== WebSocket.CLOSED) {
-        ws.close(1000, 'Component unmounted');
+      if (unsubscribe) {
+        unsubscribe();
       }
     };
-  }, []);
+  }, [addMessageCallback]);
+
+  // Update camera connection status based on WebSocket status
+  useEffect(() => {
+    if (!isConnected) {
+      // Clear refs
+      cameraFramesRef.current.basler.currentFrame = null;
+      cameraFramesRef.current.monitoring.currentFrame = null;
+
+      // Reset connection tracking
+      connectionStatusRef.current.basler = false;
+      connectionStatusRef.current.monitoring = false;
+
+      // Update status
+      setCameraStatus({
+        basler: { isConnected: false },
+        monitoring: { isConnected: false }
+      });
+    }
+  }, [isConnected]);
 
   // فعال‌سازی ابزار
   const applyTool = useCallback((tool) => {
@@ -528,8 +500,76 @@ export const CameraProvider = ({ children }) => {
     });
   }, []);
 
-  const value = {
-    cameras,
+  // Helper function to get current frame data from ref
+  const getCameraFrame = useCallback((channel) => {
+    return cameraFramesRef.current[channel]?.currentFrame || null;
+  }, []);
+
+  // Helper function to get camera stats
+  const getCameraStats = useCallback((channel) => {
+    const data = cameraFramesRef.current[channel];
+    return {
+      frameCount: data?.frameCount || 0,
+      avgFps: data?.avgFps || 0,
+      lastUpdate: data?.lastUpdate || 0
+    };
+  }, []);
+
+  // Register a callback to be notified of new frames
+  const addFrameCallback = useCallback((callback) => {
+    frameCallbacksRef.current.add(callback);
+    return () => frameCallbacksRef.current.delete(callback);
+  }, []);
+
+  // Remove a frame callback
+  const removeFrameCallback = useCallback((callback) => {
+    frameCallbacksRef.current.delete(callback);
+  }, []);
+
+  // Create a stable cameras object that doesn't change on every frame
+  const cameras = useMemo(() => ({
+    basler: {
+      get currentFrame() {
+        return cameraFramesRef.current.basler.currentFrame;
+      },
+      get frameCount() {
+        return cameraFramesRef.current.basler.frameCount;
+      },
+      get avgFps() {
+        return cameraFramesRef.current.basler.avgFps;
+      },
+      get lastUpdate() {
+        return cameraFramesRef.current.basler.lastUpdate;
+      },
+      isConnected: cameraStatus.basler.isConnected
+    },
+    monitoring: {
+      get currentFrame() {
+        return cameraFramesRef.current.monitoring.currentFrame;
+      },
+      get frameCount() {
+        return cameraFramesRef.current.monitoring.frameCount;
+      },
+      get avgFps() {
+        return cameraFramesRef.current.monitoring.avgFps;
+      },
+      get lastUpdate() {
+        return cameraFramesRef.current.monitoring.lastUpdate;
+      },
+      isConnected: cameraStatus.monitoring.isConnected
+    }
+  }), [cameraStatus]); // Only recreate when connection status changes
+
+  const value = useMemo(() => ({
+    // Camera data access
+    cameras, // Stable object with getters
+    cameraStatus,
+    getCameraFrame,
+    getCameraStats,
+    addFrameCallback, // Components can register for frame updates
+    removeFrameCallback,
+
+    // Tool and drawing state
     activeTool,
     drawings,
     toolDrawings,
@@ -537,7 +577,9 @@ export const CameraProvider = ({ children }) => {
     currentPath,
     imageSettings,
     cursorPosition,
-    wsStatus,
+    wsStatus: connectionStatus,
+
+    // Functions
     applyTool,
     startDrawing,
     continueDrawing,
@@ -552,7 +594,24 @@ export const CameraProvider = ({ children }) => {
     resetZoom,
     panImage,
     undoLastChange
-  };
+  }), [
+    // State values only (functions are stable with useCallback)
+    cameras, // Stable object that only changes on connection status
+    cameraStatus,
+    activeTool,
+    drawings,
+    toolDrawings,
+    isDrawing,
+    currentPath,
+    imageSettings,
+    cursorPosition,
+    connectionStatus,
+    getCameraFrame,
+    getCameraStats,
+    addFrameCallback,
+    removeFrameCallback
+    // Other functions omitted - they're stable with useCallback
+  ]);
 
   return (
     <CameraContext.Provider value={value}>

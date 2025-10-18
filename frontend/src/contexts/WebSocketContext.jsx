@@ -1,8 +1,12 @@
-import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState, useCallback, useMemo } from "react";
+import debugLogger from '../utils/debugLogger';
 
 const WebSocketContext = createContext();
 
 export const WebSocketProvider = ({ children }) => {
+  // Log render
+  debugLogger.logRender('WebSocketProvider');
+
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('connecting'); // 'connecting', 'connected', 'disconnected', 'reconnecting'
@@ -21,28 +25,39 @@ export const WebSocketProvider = ({ children }) => {
       clearTimeout(reconnectTimeout.current);
       reconnectTimeout.current = null;
     }
-    if (socketRef.current && socketRef.current.readyState !== WebSocket.CLOSED) {
-      socketRef.current.close();
+    if (socketRef.current) {
+      const currentSocket = socketRef.current;
+      // Check if already closed/closing to avoid error logs
+      if (currentSocket.readyState === WebSocket.OPEN ||
+          currentSocket.readyState === WebSocket.CONNECTING) {
+        currentSocket.close(1000, 'Cleanup');
+      }
+      socketRef.current = null;
     }
   }, []);
 
   const connect = useCallback(() => {
     if (isUnmounted.current) return;
-    
-    // بستن اتصال قبلی در صورت وجود
-    cleanup();
-    
+
+    // Only cleanup if we have an existing connection
+    if (socketRef.current) {
+      cleanup();
+    }
+
     setConnectionStatus('connecting');
-    console.log("🔄 Attempting to connect to WebSocket...");
-    
+
     const ws = new WebSocket(WS_URL);
     socketRef.current = ws;
     setSocket(ws);
 
     ws.onopen = () => {
-      if (isUnmounted.current) return;
-      
-      console.log("✅ WebSocket connected successfully");
+      if (isUnmounted.current) {
+        ws.close(1000, 'Component unmounted');
+        return;
+      }
+
+      debugLogger.logWebSocket('CONNECTED');
+      console.log("✅ WebSocket connected");
       setIsConnected(true);
       setConnectionStatus('connected');
       reconnectAttempts.current = 0;
@@ -50,30 +65,37 @@ export const WebSocketProvider = ({ children }) => {
 
     ws.onmessage = (event) => {
       if (isUnmounted.current) return;
-      
+
       const message = event.data;
       // فراخوانی callback ها بدون تغییر state اضافی
       listeners.current.forEach((cb) => {
         try {
           cb(message);
         } catch (error) {
-          console.error("Error in message callback:", error);
+          console.error("❌ Error in message callback:", error);
         }
       });
     };
 
     ws.onerror = (err) => {
-      console.error("❌ WebSocket error:", err);
+      // Only log if not unmounted (to reduce Strict Mode noise)
+      if (!isUnmounted.current) {
+        console.error("❌ WebSocket error:", err);
+      }
       setConnectionStatus('disconnected');
     };
 
     ws.onclose = (event) => {
       if (isUnmounted.current) return;
-      
-      console.warn("⚠️ WebSocket disconnected", event.code, event.reason);
+
+      // Only log meaningful disconnects (not intentional closes)
+      if (event.code !== 1000) {
+        console.warn("⚠️ WebSocket disconnected", event.code);
+      }
+
       setIsConnected(false);
       setConnectionStatus('disconnected');
-      
+
       // فقط در صورتی که اتصال غیرمنتظره قطع شده باشد
       if (event.code !== 1000 && reconnectAttempts.current < MAX_RECONNECT_ATTEMPTS) {
         attemptReconnect();
@@ -105,7 +127,7 @@ export const WebSocketProvider = ({ children }) => {
     connect();
 
     return () => {
-      console.log("🧹 Cleaning up WebSocket connection");
+      // Cleanup silently to reduce Strict Mode console noise
       isUnmounted.current = true;
       cleanup();
     };
@@ -143,14 +165,14 @@ export const WebSocketProvider = ({ children }) => {
     connect();
   }, [connect]);
 
-  const value = {
+  const value = useMemo(() => ({
     isConnected,
     connectionStatus,
     send,
     addMessageCallback,
     removeMessageCallback,
-    reconnect, // اضافه شده برای اتصال دستی
-  };
+    reconnect,
+  }), [isConnected, connectionStatus, send, addMessageCallback, removeMessageCallback, reconnect]);
 
   return (
     <WebSocketContext.Provider value={value}>
