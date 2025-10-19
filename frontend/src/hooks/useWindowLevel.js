@@ -59,7 +59,7 @@ export function useWindowLevel(canvasRef, enabled = true) {
 
     // اعمال Window/Level
     console.log('✨ Applying Window/Level:', { minLevel, maxLevel, bitDepth });
-    applyWindowLevel(canvas, minLevel, maxLevel, bitDepth);
+    applyWindowLevel(canvas, minLevel, maxLevel, bitDepth, originalImageDataRef.current);
 
   }, [canvasRef, minLevel, maxLevel, bitDepth, isWindowLevelApplied, enabled]);
 
@@ -150,10 +150,105 @@ function restoreOriginalImage(canvas, originalData) {
 }
 
 /**
+ * پردازش داده‌های تصویر با Window/Level
+ */
+function processImageData(tempCtx, tempCanvas, minLevel, maxLevel, bitDepth, canvas, bgImg) {
+  // دریافت داده‌های تصویر
+  const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+  const data = imageData.data;
+
+  // برای 16-bit، Canvas همیشه 8-bit هست، پس باید scale کنیم
+  if (bitDepth === 16) {
+    console.log('🔢 16-bit mode: scaling levels from 16-bit to 8-bit range');
+    // Scale کردن مقادیر 16-bit (0-65535) به 8-bit (0-255)
+    const scaledMin = Math.round((minLevel / 65535) * 255);
+    const scaledMax = Math.round((maxLevel / 65535) * 255);
+
+    console.log(`   Original: ${minLevel}-${maxLevel}`);
+    console.log(`   Scaled: ${scaledMin}-${scaledMax}`);
+
+    const range = scaledMax - scaledMin;
+    if (range === 0) {
+      console.warn('⚠️ Range is zero, skipping Window/Level');
+      return;
+    }
+
+    // اعمال Window/Level با مقادیر scaled
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+
+      // اعمال Window/Level به هر کانال
+      if (r <= scaledMin) {
+        data[i] = 0;
+      } else if (r >= scaledMax) {
+        data[i] = 255;
+      } else {
+        data[i] = Math.round(((r - scaledMin) / range) * 255);
+      }
+
+      if (g <= scaledMin) {
+        data[i + 1] = 0;
+      } else if (g >= scaledMax) {
+        data[i + 1] = 255;
+      } else {
+        data[i + 1] = Math.round(((g - scaledMin) / range) * 255);
+      }
+
+      if (b <= scaledMin) {
+        data[i + 2] = 0;
+      } else if (b >= scaledMax) {
+        data[i + 2] = 255;
+      } else {
+        data[i + 2] = Math.round(((b - scaledMin) / range) * 255);
+      }
+    }
+  } else {
+    // 8-bit mode: استفاده از LUT برای سرعت بیشتر
+    console.log('🔢 8-bit mode: using LUT');
+    const lut = new Uint8Array(256);
+    const range = maxLevel - minLevel;
+
+    if (range === 0) {
+      console.warn('⚠️ Range is zero, skipping Window/Level');
+      return;
+    }
+
+    for (let i = 0; i <= 255; i++) {
+      if (i <= minLevel) {
+        lut[i] = 0;
+      } else if (i >= maxLevel) {
+        lut[i] = 255;
+      } else {
+        lut[i] = Math.round(((i - minLevel) / range) * 255);
+      }
+    }
+
+    // اعمال LUT به هر پیکسل
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = lut[data[i]];         // Red
+      data[i + 1] = lut[data[i + 1]]; // Green
+      data[i + 2] = lut[data[i + 2]]; // Blue
+      // Alpha (data[i + 3]) تغییر نمیکنه
+    }
+  }
+
+  // نوشتن داده‌های پردازش شده
+  tempCtx.putImageData(imageData, 0, 0);
+
+  // بروزرسانی تصویر پس‌زمینه با تصویر پردازش شده
+  bgImg.setSrc(tempCanvas.toDataURL(), () => {
+    console.log('✅ Window/Level applied successfully');
+    canvas.renderAll();
+  });
+}
+
+/**
  * اعمال Window/Level
  */
-function applyWindowLevel(canvas, minLevel, maxLevel, bitDepth) {
-  console.log('🎨 applyWindowLevel called:', { minLevel, maxLevel, bitDepth });
+function applyWindowLevel(canvas, minLevel, maxLevel, bitDepth, originalImageData) {
+  console.log('🎨 applyWindowLevel called:', { minLevel, maxLevel, bitDepth, hasOriginal: !!originalImageData });
 
   // اگر Fabric Canvas هست و backgroundImage داره
   if (canvas.backgroundImage) {
@@ -166,98 +261,28 @@ function applyWindowLevel(canvas, minLevel, maxLevel, bitDepth) {
     tempCanvas.height = bgImg.height;
     const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
 
-    // رسم تصویر پس‌زمینه روی canvas موقت
-    tempCtx.drawImage(bgImg.getElement(), 0, 0);
+    // ⚡ CRITICAL: استفاده از تصویر اصلی (نه تصویر فعلی که process شده)
+    if (originalImageData && originalImageData.type === 'fabric' && originalImageData.src) {
+      // Load کردن تصویر اصلی
+      const originalImg = new Image();
+      originalImg.onload = () => {
+        console.log('✅ Original image loaded, applying Window/Level');
+        // رسم تصویر اصلی روی canvas موقت
+        tempCtx.drawImage(originalImg, 0, 0);
 
-    // دریافت داده‌های تصویر
-    const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-    const data = imageData.data;
-
-    // برای 16-bit، Canvas همیشه 8-bit هست، پس باید scale کنیم
-    if (bitDepth === 16) {
-      console.log('🔢 16-bit mode: scaling levels from 16-bit to 8-bit range');
-      // Scale کردن مقادیر 16-bit (0-65535) به 8-bit (0-255)
-      const scaledMin = Math.round((minLevel / 65535) * 255);
-      const scaledMax = Math.round((maxLevel / 65535) * 255);
-
-      console.log(`   Original: ${minLevel}-${maxLevel}`);
-      console.log(`   Scaled: ${scaledMin}-${scaledMax}`);
-
-      const range = scaledMax - scaledMin;
-      if (range === 0) {
-        console.warn('⚠️ Range is zero, skipping Window/Level');
-        return;
-      }
-
-      // اعمال Window/Level با مقادیر scaled
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-
-        // اعمال Window/Level به هر کانال
-        if (r <= scaledMin) {
-          data[i] = 0;
-        } else if (r >= scaledMax) {
-          data[i] = 255;
-        } else {
-          data[i] = Math.round(((r - scaledMin) / range) * 255);
-        }
-
-        if (g <= scaledMin) {
-          data[i + 1] = 0;
-        } else if (g >= scaledMax) {
-          data[i + 1] = 255;
-        } else {
-          data[i + 1] = Math.round(((g - scaledMin) / range) * 255);
-        }
-
-        if (b <= scaledMin) {
-          data[i + 2] = 0;
-        } else if (b >= scaledMax) {
-          data[i + 2] = 255;
-        } else {
-          data[i + 2] = Math.round(((b - scaledMin) / range) * 255);
-        }
-      }
+        // ادامه پردازش با کد موجود
+        processImageData(tempCtx, tempCanvas, minLevel, maxLevel, bitDepth, canvas, bgImg);
+      };
+      originalImg.src = originalImageData.src;
+      return; // منتظر load شدن تصویر
     } else {
-      // 8-bit mode: استفاده از LUT برای سرعت بیشتر
-      console.log('🔢 8-bit mode: using LUT');
-      const lut = new Uint8Array(256);
-      const range = maxLevel - minLevel;
-
-      if (range === 0) {
-        console.warn('⚠️ Range is zero, skipping Window/Level');
-        return;
-      }
-
-      for (let i = 0; i <= 255; i++) {
-        if (i <= minLevel) {
-          lut[i] = 0;
-        } else if (i >= maxLevel) {
-          lut[i] = 255;
-        } else {
-          lut[i] = Math.round(((i - minLevel) / range) * 255);
-        }
-      }
-
-      // اعمال LUT به هر پیکسل
-      for (let i = 0; i < data.length; i += 4) {
-        data[i] = lut[data[i]];         // Red
-        data[i + 1] = lut[data[i + 1]]; // Green
-        data[i + 2] = lut[data[i + 2]]; // Blue
-        // Alpha (data[i + 3]) تغییر نمیکنه
-      }
+      // اگر تصویر اصلی نداریم، از تصویر فعلی استفاده کن
+      console.warn('⚠️ No original image found, using current image (may cause degradation)');
+      tempCtx.drawImage(bgImg.getElement(), 0, 0);
     }
 
-    // نوشتن داده‌های پردازش شده
-    tempCtx.putImageData(imageData, 0, 0);
-
-    // بروزرسانی تصویر پس‌زمینه با تصویر پردازش شده
-    bgImg.setSrc(tempCanvas.toDataURL(), () => {
-      console.log('✅ Window/Level applied successfully');
-      canvas.renderAll();
-    });
+    // پردازش تصویر
+    processImageData(tempCtx, tempCanvas, minLevel, maxLevel, bitDepth, canvas, bgImg);
 
     return;
   }
