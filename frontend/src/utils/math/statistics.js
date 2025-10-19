@@ -163,3 +163,51 @@ export const calculatePercentile = (data, percentile) => {
 
   return sorted[Math.max(0, index)];
 };
+
+/**
+ * Calculate SNR (Signal-to-Noise Ratio)
+ * SNR = μ / σ
+ * where μ is mean (signal) and σ is standard deviation (noise)
+ *
+ * Higher SNR = better image quality with less noise
+ *
+ * @param {Array|Uint8Array|Uint16Array} data - Pixel data
+ * @param {number} mean - Pre-calculated mean (optional)
+ * @param {number} stdDev - Pre-calculated standard deviation (optional)
+ * @returns {number} SNR value
+ */
+export const calculateSNR = (data, mean = null, stdDev = null) => {
+  if (!data || data.length === 0) return 0;
+
+  const avg = mean !== null ? mean : calculateMean(data);
+  const sd = stdDev !== null ? stdDev : calculateStdDev(data, avg);
+
+  // Avoid division by zero
+  if (sd === 0) return Infinity;
+
+  return avg / sd;
+};
+
+/**
+ * Calculate CNR (Contrast-to-Noise Ratio) between two ROIs
+ * CNR = |μ₁ - μ₂| / √(σ₁² + σ₂²)
+ * where μ₁, μ₂ are means and σ₁, σ₂ are standard deviations
+ *
+ * Higher CNR = better contrast between ROIs relative to noise
+ *
+ * @param {Object} stats1 - Statistics of first ROI {mean, stdDev}
+ * @param {Object} stats2 - Statistics of second ROI {mean, stdDev}
+ * @returns {number} CNR value
+ */
+export const calculateCNR = (stats1, stats2) => {
+  if (!stats1 || !stats2) return 0;
+
+  const meanDiff = Math.abs(stats1.mean - stats2.mean);
+  const varianceSum = Math.pow(stats1.stdDev, 2) + Math.pow(stats2.stdDev, 2);
+  const noiseTerm = Math.sqrt(varianceSum);
+
+  // Avoid division by zero
+  if (noiseTerm === 0) return Infinity;
+
+  return meanDiff / noiseTerm;
+};

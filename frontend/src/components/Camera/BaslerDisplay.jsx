@@ -179,7 +179,8 @@ const BaslerDisplay = () => {
 
       rectStartPointRef.current = pointer;
 
-      // Create a new rectangle
+      // Create a new rectangle with unique ID
+      const uniqueId = `roi-rectangle-${Date.now()}`;
       const rect = new fabric.Rect({
         left: pointer.x,
         top: pointer.y,
@@ -191,7 +192,7 @@ const BaslerDisplay = () => {
         selectable: false,
         evented: false,
         hasRotatingPoint: false,
-        name: 'roi-rectangle', // Add name for identification
+        name: uniqueId, // Unique name for identification
         originX: 'left',
         originY: 'top'
       });

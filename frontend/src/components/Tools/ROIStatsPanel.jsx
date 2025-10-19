@@ -25,6 +25,7 @@ import {
   Maximize2
 } from 'lucide-react';
 import { analyzeROI } from '../../utils/roi/roiAnalysis';
+import { calculateSNR, calculateCNR } from '../../utils/math/statistics';
 import { fabric } from 'fabric';
 
 /**
@@ -104,6 +105,8 @@ const ROIStatsPanel = ({ canvas, isActive, onClose }) => {
   const [selectedROI, setSelectedROI] = useState(null);
   const [stats, setStats] = useState(null);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [comparisonROI, setComparisonROI] = useState(null); // For CNR calculation
+  const [comparisonStats, setComparisonStats] = useState(null);
 
   // Detect ROIs on canvas
   const updateROIs = useCallback(() => {
@@ -168,6 +171,34 @@ const ROIStatsPanel = ({ canvas, isActive, onClose }) => {
       canvas.renderAll();
     }
   }, [calculateStats, canvas]);
+
+  // Handle comparison ROI selection for CNR
+  const handleComparisonROISelect = useCallback(async (roi) => {
+    if (!canvas || !roi) return;
+
+    console.log('🔵 Comparison ROI selected:', roi.id);
+    setComparisonROI(roi);
+
+    // Calculate stats for comparison ROI
+    try {
+      const imageData = getCanvasImageData(canvas.lowerCanvasEl);
+      if (!imageData) {
+        console.error('❌ Failed to get image data for comparison ROI');
+        return;
+      }
+
+      const result = analyzeROI(imageData, roi.bounds, roi.shape, {
+        channel: 'gray',
+        calculateMetrics: false
+      });
+
+      console.log('✅ Comparison ROI stats calculated:', result.statistics);
+      setComparisonStats(result);
+    } catch (error) {
+      console.error('Error calculating comparison ROI statistics:', error);
+      setComparisonStats(null);
+    }
+  }, [canvas]);
 
   // Listen to canvas events
   useEffect(() => {
@@ -303,6 +334,8 @@ const ROIStatsPanel = ({ canvas, isActive, onClose }) => {
                   canvas.renderAll();
                   setSelectedROI(null);
                   setStats(null);
+                  setComparisonROI(null);
+                  setComparisonStats(null);
                   updateROIs();
                 }}
                 className="w-full px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium mt-2"
@@ -312,6 +345,59 @@ const ROIStatsPanel = ({ canvas, isActive, onClose }) => {
             </div>
           )}
         </div>
+
+        {/* CNR Comparison Section */}
+        {rois.length >= 2 && (
+          <div className="border-t border-border pt-4">
+            <label className="text-xs font-medium text-text-muted mb-2 block">
+              {t('cnrComparison')} (CNR)
+            </label>
+            <p className="text-xs text-text-muted mb-3">
+              {t('cnrDescription')}
+            </p>
+
+            {/* Select second ROI for comparison */}
+            <div className="space-y-2">
+              {rois.map((roi, index) => {
+                const isPrimaryROI = selectedROI?.id === roi.id;
+                const isComparisonROI = comparisonROI?.id === roi.id;
+
+                return (
+                  <motion.button
+                    key={`comparison-${roi.id}`}
+                    onClick={() => {
+                      console.log('🖱️ Clicked comparison ROI:', roi.id, 'isPrimary:', isPrimaryROI);
+                      if (!isPrimaryROI) {
+                        handleComparisonROISelect(roi);
+                      }
+                    }}
+                    disabled={isPrimaryROI}
+                    className={`w-full flex items-center gap-2 p-2 rounded-lg border transition-all text-sm ${
+                      isComparisonROI
+                        ? 'bg-purple-500/10 border-purple-500 text-purple-500'
+                        : isPrimaryROI
+                        ? 'bg-background-primary border-border text-text-muted opacity-50 cursor-not-allowed'
+                        : 'bg-background-primary border-border hover:border-purple-500/50 text-text cursor-pointer'
+                    }`}
+                    whileHover={!isPrimaryROI ? { scale: 1.02 } : {}}
+                    whileTap={!isPrimaryROI ? { scale: 0.98 } : {}}
+                  >
+                    {roi.type === 'rectangle' ? (
+                      <Square className="w-3 h-3" />
+                    ) : (
+                      <CircleIcon className="w-3 h-3" />
+                    )}
+                    <span>
+                      {t(roi.type)} #{index + 1}
+                      {isPrimaryROI && ' (Primary)'}
+                      {isComparisonROI && ' (Comparison)'}
+                    </span>
+                  </motion.button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Statistics Display */}
         <AnimatePresence mode="wait">
@@ -408,6 +494,55 @@ const ROIStatsPanel = ({ canvas, isActive, onClose }) => {
                   </span>
                 </div>
               </div>
+
+              {/* SNR (Signal-to-Noise Ratio) - Requirement #34 */}
+              <div className="p-3 bg-background-primary rounded-lg border border-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-emerald-500" />
+                    <span className="text-xs font-medium text-text-muted">
+                      {t('snr')}
+                    </span>
+                  </div>
+                  <span className="text-lg font-bold text-text">
+                    {calculateSNR(
+                      null,
+                      stats.statistics.mean,
+                      stats.statistics.stdDev
+                    ).toFixed(2)}
+                  </span>
+                </div>
+                <div className="mt-1 text-xs text-text-muted">
+                  μ/σ = {stats.statistics.mean.toFixed(2)}/{stats.statistics.stdDev.toFixed(2)}
+                </div>
+              </div>
+
+              {/* CNR (Contrast-to-Noise Ratio) - Requirement #34 */}
+              {comparisonROI && comparisonStats && (
+                <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4 text-purple-500" />
+                      <span className="text-xs font-medium text-purple-300">
+                        {t('cnr')}
+                      </span>
+                    </div>
+                    <span className="text-lg font-bold text-purple-100">
+                      {calculateCNR(
+                        stats.statistics,
+                        comparisonStats.statistics
+                      ).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="text-xs text-purple-300/80 space-y-1">
+                    <div>ROI 1: μ={stats.statistics.mean.toFixed(1)}, σ={stats.statistics.stdDev.toFixed(1)}</div>
+                    <div>ROI 2: μ={comparisonStats.statistics.mean.toFixed(1)}, σ={comparisonStats.statistics.stdDev.toFixed(1)}</div>
+                    <div className="pt-1 border-t border-purple-500/20">
+                      CNR = |μ₁-μ₂| / √(σ₁²+σ₂²)
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Additional Stats - Median */}
               <div className="p-3 bg-gradient-to-r from-primary/5 to-primary-dark/5 rounded-lg border border-primary/20">
