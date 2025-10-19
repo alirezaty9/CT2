@@ -28,6 +28,8 @@ import {
   X,
   BarChart3,
   Activity,
+  Crosshair,
+  MapPin,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ToolManager } from "./Tools";
@@ -36,6 +38,8 @@ import ZoomTool from "./Tools/ZoomTool.jsx";
 import EraseToolComponent from "./Tools/EraseToolComponent";
 import HistogramTool from "./Tools/HistogramTool.jsx";
 import IntensityProfileTool from "./Tools/IntensityProfileTool.jsx";
+import CrosshairToolPanel from "./Tools/CrosshairToolPanel.jsx";
+import PixelCoordinatePanel from "./Tools/PixelCoordinatePanel.jsx";
 
 // CSS for hiding scrollbar
 const scrollbarHideStyle = `
@@ -76,6 +80,8 @@ const tools = [
   { Icon: ZoomIn, name: "zoom", hotkey: "z", category: "view" },
   { Icon: BarChart3, name: "histogram", hotkey: "h", category: "analyze" },
   { Icon: Activity, name: "intensity", hotkey: "i", category: "analyze" },
+  { Icon: Crosshair, name: "crosshair", hotkey: "x", category: "analyze" },
+  { Icon: MapPin, name: "pixelCoordinate", hotkey: "p", category: "analyze" },
   { Icon: Palette, name: "grayscale", hotkey: "g", category: "filter" },
   { Icon: Hand, name: "pan", hotkey: "space", category: "nav" },
   { Icon: RotateCcw, name: "undo", hotkey: "ctrl+z", category: "edit" },
@@ -198,6 +204,8 @@ const Toolbar = ({ className = "" }) => {
   useHotkeys("z", () => handleToolClick("zoom"), { preventDefault: true });
   useHotkeys("h", () => handleToolClick("histogram"), { preventDefault: true });
   useHotkeys("i", () => handleToolClick("intensity"), { preventDefault: true });
+  useHotkeys("x", () => handleToolClick("crosshair"), { preventDefault: true });
+  useHotkeys("p", () => handleToolClick("pixelCoordinate"), { preventDefault: true });
   useHotkeys("g", () => handleToolClick("grayscale"), { preventDefault: true });
   useHotkeys("space", () => handleToolClick("pan"), { preventDefault: true });
   useHotkeys("ctrl+z", () => handleToolClick("undo"), { preventDefault: true });
@@ -649,6 +657,20 @@ const Toolbar = ({ className = "" }) => {
       {canvas && (
         <div className={`absolute left-full top-0 ml-2 z-50 ${activeTool === "intensity" ? "" : "hidden"}`}>
           <IntensityProfileTool canvas={canvas} isActive={activeTool === "intensity"} onClose={() => applyTool(null)} />
+        </div>
+      )}
+
+      {/* Crosshair Tool - Requirement #22 */}
+      {canvas && (
+        <div className={`absolute left-full top-0 ml-2 z-50 ${activeTool === "crosshair" ? "" : "hidden"}`}>
+          <CrosshairToolPanel canvas={canvas} isActive={activeTool === "crosshair"} onClose={() => applyTool(null)} />
+        </div>
+      )}
+
+      {/* Pixel Coordinate Tool - Requirement #23 */}
+      {canvas && (
+        <div className={`absolute left-full top-0 ml-2 z-50 ${activeTool === "pixelCoordinate" ? "" : "hidden"}`}>
+          <PixelCoordinatePanel canvas={canvas} isActive={activeTool === "pixelCoordinate"} onClose={() => applyTool(null)} />
         </div>
       )}
     </motion.div>

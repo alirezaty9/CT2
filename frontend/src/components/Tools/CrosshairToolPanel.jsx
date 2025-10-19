@@ -1,0 +1,257 @@
+/**
+ * CrosshairToolPanel Component
+ * UI Panel for Crosshair Tool - Integrates with Toolbar
+ * Requirement #22: Draw two lines passing through the center of ROI
+ *
+ * @module components/Tools/CrosshairToolPanel
+ * @version 2.0.0
+ */
+
+import React, { useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+import { Crosshair, X, Info } from 'lucide-react';
+import SimpleCrosshair from './SimpleCrosshair';
+
+const CrosshairToolPanel = ({ canvas, isActive, onClose }) => {
+  const { t } = useTranslation();
+  const [crosshairEnabled, setCrosshairEnabled] = useState(true);
+  const [crosshairConfig, setCrosshairConfig] = useState({
+    color: '#00ff00',
+    strokeWidth: 2,
+    strokeDashArray: [10, 5],
+    opacity: 0.8,
+    showCenter: true,
+    centerRadius: 5,
+    centerColor: '#ff0000'
+  });
+
+  const updateConfig = useCallback((newConfig) => {
+    setCrosshairConfig(prev => ({ ...prev, ...newConfig }));
+  }, []);
+
+  if (!isActive) return null;
+
+  return (
+    <>
+      {/* SimpleCrosshair Component - Headless rendering */}
+      <SimpleCrosshair
+        canvas={canvas}
+        enabled={crosshairEnabled}
+        config={crosshairConfig}
+      />
+
+      {/* Control Panel */}
+      <motion.div
+        initial={{ opacity: 0, x: -20, scale: 0.95 }}
+        animate={{ opacity: 1, x: 0, scale: 1 }}
+        exit={{ opacity: 0, x: -20, scale: 0.95 }}
+        transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+        className="bg-white dark:bg-background-secondary border-2 border-border rounded-2xl shadow-2xl w-80 overflow-hidden"
+      >
+        {/* Header */}
+        <div className="bg-gradient-to-r from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                <Crosshair className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-lg">
+                  {t('crosshairTool') || 'Crosshair Tool'}
+                </h3>
+                <p className="text-white/80 text-xs">
+                  {t('requirement22') || 'Requirement #22'}
+                </p>
+              </div>
+            </div>
+            <motion.button
+              onClick={onClose}
+              className="text-white/80 hover:text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
+              whileHover={{ scale: 1.1, rotate: 90 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              <X className="w-5 h-5" />
+            </motion.button>
+          </div>
+
+        </div>
+
+        {/* Content */}
+        <div className="p-4 space-y-4 max-h-[500px] overflow-y-auto">
+          {/* Info Box */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800"
+          >
+            <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-blue-800 dark:text-blue-300">
+              <p className="font-semibold mb-1">{t('crosshairInfo') || 'Crosshair Lines'}</p>
+              <p className="text-xs">
+                {t('crosshairDescription') || 'Two perpendicular lines passing through the center of the canvas.'}
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Enable/Disable Toggle */}
+          <div className="flex items-center justify-between p-3 bg-background-secondary dark:bg-accent rounded-lg">
+            <div className="flex items-center gap-2">
+              <Crosshair className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium text-text dark:text-text">
+                {t('showCrosshair') || 'Show Crosshair'}
+              </span>
+            </div>
+            <button
+              onClick={() => setCrosshairEnabled(!crosshairEnabled)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                crosshairEnabled ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
+              }`}
+            >
+              <motion.span
+                layout
+                className="inline-block h-4 w-4 transform rounded-full bg-white shadow-lg"
+                animate={{ x: crosshairEnabled ? 26 : 4 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+              />
+            </button>
+          </div>
+
+          {/* Configuration (only when enabled) */}
+          <AnimatePresence>
+            {crosshairEnabled && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="space-y-4"
+              >
+                {/* Color Picker */}
+                <div>
+                  <label className="text-sm font-medium text-text dark:text-text mb-2 block">
+                    {t('lineColor') || 'Line Color'}
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={crosshairConfig.color}
+                      onChange={(e) => updateConfig({ color: e.target.value })}
+                      className="w-12 h-10 rounded-lg cursor-pointer border-2 border-border"
+                    />
+                    <span className="text-sm font-mono text-text-muted bg-background-secondary dark:bg-accent px-3 py-2 rounded-lg flex-1">
+                      {crosshairConfig.color}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Stroke Width */}
+                <div>
+                  <label className="text-sm font-medium text-text dark:text-text mb-2 flex justify-between">
+                    <span>{t('lineWidth') || 'Line Width'}</span>
+                    <span className="font-mono text-primary">{crosshairConfig.strokeWidth}px</span>
+                  </label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    step="0.5"
+                    value={crosshairConfig.strokeWidth}
+                    onChange={(e) => updateConfig({ strokeWidth: parseFloat(e.target.value) })}
+                    className="w-full accent-primary"
+                  />
+                </div>
+
+                {/* Opacity */}
+                <div>
+                  <label className="text-sm font-medium text-text dark:text-text mb-2 flex justify-between">
+                    <span>{t('opacity') || 'Opacity'}</span>
+                    <span className="font-mono text-primary">{(crosshairConfig.opacity * 100).toFixed(0)}%</span>
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={crosshairConfig.opacity}
+                    onChange={(e) => updateConfig({ opacity: parseFloat(e.target.value) })}
+                    className="w-full accent-primary"
+                  />
+                </div>
+
+                {/* Advanced Options */}
+                <div className="border-t border-border pt-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-text dark:text-text">
+                      {t('showCenterMarker') || 'Show Center Marker'}
+                    </span>
+                    <button
+                      onClick={() => updateConfig({ showCenter: !crosshairConfig.showCenter })}
+                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                        crosshairConfig.showCenter
+                          ? 'bg-green-500 text-white'
+                          : 'bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      {crosshairConfig.showCenter ? (t('yes') || 'Yes') : (t('no') || 'No')}
+                    </button>
+                  </div>
+
+                  {/* Center Marker Color (only when showCenter is true) */}
+                  {crosshairConfig.showCenter && (
+                    <div>
+                      <label className="text-sm font-medium text-text dark:text-text mb-2 block">
+                        {t('centerMarkerColor') || 'Center Marker Color'}
+                      </label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="color"
+                          value={crosshairConfig.centerColor}
+                          onChange={(e) => updateConfig({ centerColor: e.target.value })}
+                          className="w-12 h-10 rounded-lg cursor-pointer border-2 border-border"
+                        />
+                        <span className="text-sm font-mono text-text-muted bg-background-secondary dark:bg-accent px-3 py-2 rounded-lg flex-1">
+                          {crosshairConfig.centerColor}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Center Marker Radius (only when showCenter is true) */}
+                  {crosshairConfig.showCenter && (
+                    <div>
+                      <label className="text-sm font-medium text-text dark:text-text mb-2 flex justify-between">
+                        <span>{t('centerMarkerSize') || 'Center Marker Size'}</span>
+                        <span className="font-mono text-primary">{crosshairConfig.centerRadius}px</span>
+                      </label>
+                      <input
+                        type="range"
+                        min="2"
+                        max="15"
+                        step="1"
+                        value={crosshairConfig.centerRadius}
+                        onChange={(e) => updateConfig({ centerRadius: parseInt(e.target.value) })}
+                        className="w-full accent-primary"
+                      />
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 bg-background-secondary dark:bg-accent border-t border-border">
+          <div className="text-xs text-center text-text-muted">
+            <kbd className="px-2 py-1 bg-background-white dark:bg-background-secondary rounded border border-border">
+              X
+            </kbd>{' '}
+            {t('toCrosshair') || 'to toggle crosshair'}
+          </div>
+        </div>
+      </motion.div>
+    </>
+  );
+};
+
+export default CrosshairToolPanel;

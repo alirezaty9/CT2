@@ -7,3 +7,4 @@ export { default as MoveTool } from './MoveTool.jsx';
 export { default as CropTool } from './CropTool.jsx';
 export { default as ZoomTool } from './ZoomTool.jsx';
 export { default as EraseToolComponent } from './EraseToolComponent.jsx';
+export { default as CrosshairTool, CrosshairControlPanel } from './CrosshairTool.jsx';
