@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart3, Crosshair, Info, Square, Minus, X, Settings } from 'lucide-react';
 import { useHistogram } from '../../contexts/HistogramContext';
+import { useFormData } from '../../contexts/FormDataContext';
 import { fabric } from 'fabric';
 import { useToolLayer } from '../../hooks/useToolLayer';
 
@@ -13,6 +14,11 @@ const HistogramTool = ({ canvas, isActive, onClose }) => {
   const selectionObjectRef = useRef(null);
   const overlaysRef = useRef([]);
   const { updateHistogram } = useHistogram();
+  const { formData } = useFormData();
+
+  // دریافت bit depth از تنظیمات
+  const bitDepthStr = formData?.initialParameters?.bitDepth || '8-bit';
+  const bitDepth = bitDepthStr === '16-bit' ? 16 : 8;
 
   // Use layer system
   const { addToLayer, removeFromLayer, getCurrentLayer } = useToolLayer(
@@ -22,29 +28,48 @@ const HistogramTool = ({ canvas, isActive, onClose }) => {
     isActive
   );
 
-  // Calculate histogram from image data
-  const calculateHistogramFromData = useCallback((data) => {
+  // Calculate histogram from image data - پشتیبانی از 8-bit و 16-bit
+  const calculateHistogramFromData = useCallback((data, bitDepth = 8) => {
+    const bins = bitDepth === 16 ? 65536 : 256;
+
     const histogram = {
-      red: new Array(256).fill(0),
-      green: new Array(256).fill(0),
-      blue: new Array(256).fill(0),
-      gray: new Array(256).fill(0)
+      red: new Array(bins).fill(0),
+      green: new Array(bins).fill(0),
+      blue: new Array(bins).fill(0),
+      gray: new Array(bins).fill(0)
     };
 
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i];
-      const g = data[i + 1];
-      const b = data[i + 2];
-      const gray = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+    // برای 8-bit از data معمولی استفاده میکنیم
+    if (bitDepth === 8) {
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const gray = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
 
-      histogram.red[r]++;
-      histogram.green[g]++;
-      histogram.blue[b]++;
-      histogram.gray[gray]++;
+        histogram.red[r]++;
+        histogram.green[g]++;
+        histogram.blue[b]++;
+        histogram.gray[gray]++;
+      }
+    } else {
+      // برای 16-bit، فرض میکنیم data به صورت 16-bit است
+      // هر پیکسل 8 بایت دارد (4 کانال × 2 بایت)
+      for (let i = 0; i < data.length; i += 8) {
+        // خواندن مقادیر 16-bit (Little Endian)
+        const r = data[i] | (data[i + 1] << 8);
+        const g = data[i + 2] | (data[i + 3] << 8);
+        const b = data[i + 4] | (data[i + 5] << 8);
+        const gray = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+
+        histogram.red[r]++;
+        histogram.green[g]++;
+        histogram.blue[b]++;
+        histogram.gray[gray]++;
+      }
     }
 
-    // Return actual pixel counts (not percentages)
-    return histogram;
+    return { histogram, bitDepth };
   }, []);
 
   // Get pixel data at a specific point
@@ -251,8 +276,8 @@ const HistogramTool = ({ canvas, isActive, onClose }) => {
       console.log('  Analyzed pixels:', imageData.data.length / 4);
       console.log('  Area size:', imageData.width, 'x', imageData.height);
 
-      const histogram = calculateHistogramFromData(imageData.data);
-      console.log('  Histogram calculated - Red channel sample:', histogram.red.slice(0, 10));
+      const { histogram } = calculateHistogramFromData(imageData.data, bitDepth);
+      console.log('  Histogram calculated - Gray channel sample:', histogram.gray.slice(0, 10));
 
       // Create visual indicator for point selection
       const circle = new fabric.Circle({
@@ -269,7 +294,7 @@ const HistogramTool = ({ canvas, isActive, onClose }) => {
       });
 
       const region = { type: 'point', x, y, radius, fabricObject: circle };
-      updateHistogram(histogram, { x, y, pixel: pixelData, mode: 'point' }, region);
+      updateHistogram(histogram, { x, y, pixel: pixelData, mode: 'point' }, region, bitDepth);
 
       // Add circle and overlays to canvas
       removeSelectionObject();
@@ -303,11 +328,11 @@ const HistogramTool = ({ canvas, isActive, onClose }) => {
       const imageData = ctx.getImageData(left, top, width, height);
       console.log('  Analyzed pixels:', imageData.data.length / 4);
 
-      const histogram = calculateHistogramFromData(imageData.data);
+      const { histogram } = calculateHistogramFromData(imageData.data, bitDepth);
       const avgPixel = calculateAveragePixel(imageData);
 
       console.log('  Average pixel:', avgPixel);
-      console.log('  Histogram calculated - Red channel sample:', histogram.red.slice(0, 10));
+      console.log('  Histogram calculated - Gray channel sample:', histogram.gray.slice(0, 10));
 
       // Keep the rectangle visible on canvas
       const rect = new fabric.Rect({
@@ -330,7 +355,7 @@ const HistogramTool = ({ canvas, isActive, onClose }) => {
         mode: 'area',
         width,
         height
-      }, region);
+      }, region, bitDepth);
 
       // Keep rect visible with overlays
       removeSelectionObject();
@@ -384,13 +409,13 @@ const HistogramTool = ({ canvas, isActive, onClose }) => {
 
       console.log('  Total pixels analyzed:', lineData.length / 4);
 
-      const histogram = calculateHistogramFromData(new Uint8ClampedArray(lineData));
+      const { histogram } = calculateHistogramFromData(new Uint8ClampedArray(lineData), bitDepth);
       const avgPixel = calculateAveragePixel({ data: new Uint8ClampedArray(lineData) });
 
       const length = Math.round(Math.sqrt(dx * dx + dy * dy));
       console.log('  Line length:', length, 'pixels');
       console.log('  Average pixel:', avgPixel);
-      console.log('  Histogram calculated - Red channel sample:', histogram.red.slice(0, 10));
+      console.log('  Histogram calculated - Gray channel sample:', histogram.gray.slice(0, 10));
 
       // Keep the line visible on canvas
       const line = new fabric.Line([x1, y1, x2, y2], {
@@ -407,7 +432,7 @@ const HistogramTool = ({ canvas, isActive, onClose }) => {
         pixel: avgPixel,
         mode: 'line',
         length
-      }, region);
+      }, region, bitDepth);
 
       // Keep line visible with overlays
       removeSelectionObject();

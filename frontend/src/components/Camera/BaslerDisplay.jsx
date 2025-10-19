@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronUp, Filter, Sparkles, RotateCcw } from 'lucide-react';
 import imageProcessor from '../../utils/imageProcessing';
 import debugLogger from '../../utils/debugLogger';
+import { useWindowLevel } from '../../hooks/useWindowLevel';
 
 const BaslerDisplay = () => {
   // Log render
@@ -425,6 +426,9 @@ const BaslerDisplay = () => {
       };
     }
   }, []);
+
+  // اعمال Window/Level به تصویر - این خط فقط کافیه!
+  useWindowLevel(fabricCanvasRef, true);
 
   // Update background image in Fabric.js with processing (for new frames OR filter changes)
   const updateFabricBackground = useCallback(async () => {
