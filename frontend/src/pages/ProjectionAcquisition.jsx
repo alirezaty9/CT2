@@ -32,6 +32,7 @@ const ProjectionAcquisition = () => {
     energyLevel1: '80',
     energyLevel2: '120',
     imageCount: '2',
+    transmissionPercentage: '100',
   }), []);
 
   // ✅ استفاده از hook مشترک
@@ -117,6 +118,27 @@ const ProjectionAcquisition = () => {
 
       {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-2">
+
+        {/* Transmission Percentage - مورد 27 */}
+        <div className="card p-6">
+          <FormField label={t('transmissionPercentage')} icon={Settings} showValue={false}>
+            <FormInput
+              type="number"
+              name="transmissionPercentage"
+              value={pageData.transmissionPercentage}
+              onChange={handleChange}
+              placeholder={t('enterTransmissionPercentage')}
+              min="0"
+              max="100"
+              step="0.1"
+              disabled={!isConnected}
+              suffix="%"
+            />
+            <p className="text-xs text-text-muted mt-2 font-vazir">
+              {t('transmissionPercentageDescription')}
+            </p>
+          </FormField>
+        </div>
 
         {/* Image Adjustments - Actions */}
         <div className="card p-6 lg:col-span-2">

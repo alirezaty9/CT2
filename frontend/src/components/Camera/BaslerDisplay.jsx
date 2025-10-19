@@ -19,6 +19,9 @@ const BaslerDisplay = () => {
   const backgroundImageRef = useRef(null);
   const lastFrameRef = useRef(null);
   const lastSettingsRef = useRef(null);
+  const drawingRectRef = useRef(null);
+  const rectStartPointRef = useRef(null);
+  const activeToolRef = useRef(null); // استفاده از ref برای activeTool
 
   // Image processing states
   const [showProcessingPanel, setShowProcessingPanel] = useState(false);
@@ -63,6 +66,12 @@ const BaslerDisplay = () => {
 
   // استفاده از ref برای ذخیره آخرین frame بدون re-render
   const lastProcessedFrameRef = useRef(null);
+
+  // به‌روزرسانی activeToolRef هر بار که activeTool تغییر می‌کند
+  useEffect(() => {
+    activeToolRef.current = activeTool;
+    console.log('🔄 activeToolRef updated to:', activeTool);
+  }, [activeTool]);
 
   // Direct frame update via callback - NO state change!
   useEffect(() => {
@@ -150,23 +159,97 @@ const BaslerDisplay = () => {
   }, []);
 
   const handleFabricMouseDown = useCallback((e) => {
-    // Mouse down event
-  }, [activeTool]);
+    if (!fabricCanvasRef.current) return;
+
+    const pointer = fabricCanvasRef.current.getPointer(e.e);
+    const currentTool = activeToolRef.current; // استفاده از ref به جای state
+
+    console.log('🖱️ Mouse Down - currentTool from ref:', currentTool);
+    console.log('🖱️ Pointer:', pointer);
+    console.log('🖱️ currentTool === "rectangle":', currentTool === 'rectangle');
+
+    // Rectangle tool - start drawing
+    if (currentTool === 'rectangle') {
+      console.log('📐 Starting rectangle draw at:', pointer);
+
+      // Deselect any previously selected objects
+      fabricCanvasRef.current.discardActiveObject();
+      fabricCanvasRef.current.renderAll();
+      console.log('🔄 Deselected previous objects');
+
+      rectStartPointRef.current = pointer;
+
+      // Create a new rectangle
+      const rect = new fabric.Rect({
+        left: pointer.x,
+        top: pointer.y,
+        width: 0,
+        height: 0,
+        fill: 'rgba(0, 255, 0, 0.1)',
+        stroke: '#00ff00',
+        strokeWidth: 1, // Changed from 2 to 1 to fix handle offset issue
+        selectable: false,
+        evented: false,
+        hasRotatingPoint: false,
+        name: 'roi-rectangle', // Add name for identification
+        originX: 'left',
+        originY: 'top'
+      });
+
+      fabricCanvasRef.current.add(rect);
+      drawingRectRef.current = rect;
+      fabricCanvasRef.current.renderAll();
+      console.log('✅ Rectangle object created');
+    } else {
+      console.log('❌ Not rectangle tool, current tool is:', currentTool);
+    }
+
+    // Pan tool
+    if (currentTool === 'pan') {
+      panStartRef.current = pointer;
+    }
+  }, []); // حذف dependency به activeTool
 
   const handleFabricMouseMove = useCallback((e) => {
     if (!fabricCanvasRef.current) return;
 
     const pointer = fabricCanvasRef.current.getPointer(e.e);
+    const currentTool = activeToolRef.current; // استفاده از ref
+
+    // Rectangle tool - update while drawing
+    if (currentTool === 'rectangle' && drawingRectRef.current && rectStartPointRef.current) {
+      const rect = drawingRectRef.current;
+      const startPoint = rectStartPointRef.current;
+
+      // Calculate width and height
+      const width = pointer.x - startPoint.x;
+      const height = pointer.y - startPoint.y;
+
+      // Update rectangle properties
+      if (width > 0) {
+        rect.set({ left: startPoint.x, width: width });
+      } else {
+        rect.set({ left: pointer.x, width: Math.abs(width) });
+      }
+
+      if (height > 0) {
+        rect.set({ top: startPoint.y, height: height });
+      } else {
+        rect.set({ top: pointer.y, height: Math.abs(height) });
+      }
+
+      fabricCanvasRef.current.renderAll();
+    }
 
     // Prevent eraser from leaving trails
-    if (activeTool === 'eraser') {
+    if (currentTool === 'eraser') {
       if (fabricCanvasRef.current.contextTop) {
         fabricCanvasRef.current.contextTop.globalCompositeOperation = 'destination-out';
       }
     }
 
     // Pan tool implementation
-    if (activeTool === 'pan') {
+    if (currentTool === 'pan') {
       if (e.e.buttons === 1 && panStartRef.current) {
         const delta = {
           x: pointer.x - panStartRef.current.x,
@@ -181,13 +264,80 @@ const BaslerDisplay = () => {
     if (fabricCanvasRef.current._isCurrentlyDrawing) {
       fabricCanvasRef.current.renderAll();
     }
-  }, [activeTool]);
+  }, [panImage]); // حذف activeTool از dependency
 
   const handleFabricMouseUp = useCallback(() => {
     if (fabricCanvasRef.current) {
       fabricCanvasRef.current._isCurrentlyDrawing = false;
     }
-  }, []);
+
+    const currentTool = activeToolRef.current; // استفاده از ref
+
+    console.log('🖱️ Mouse Up - currentTool from ref:', currentTool, 'Drawing Rect:', !!drawingRectRef.current);
+
+    // Rectangle tool - finish drawing
+    if (currentTool === 'rectangle' && drawingRectRef.current) {
+      const rect = drawingRectRef.current;
+      console.log('📐 Finishing rectangle - Size:', rect.width, 'x', rect.height);
+
+      // Make the rectangle selectable after drawing
+      rect.set({
+        selectable: true,
+        evented: true,
+        hasControls: true,
+        hasBorders: true,
+        lockRotation: false,
+        // Constrain rectangle within canvas bounds
+        lockMovementX: false,
+        lockMovementY: false,
+        // Custom corner style - align perfectly with rectangle corners
+        cornerSize: 8,
+        cornerColor: '#00ff00',
+        cornerStyle: 'circle',
+        borderColor: '#00ff00',
+        transparentCorners: false,
+        // Fix origin to prevent offset
+        originX: 'left',
+        originY: 'top',
+        // Critical settings to align handles perfectly
+        padding: 0,
+        strokeUniform: true,
+        objectCaching: false,
+        noScaleCache: true,
+        // Position handles at exact corners
+        borderDashArray: null,
+        borderOpacityWhenMoving: 0.4
+      });
+
+      console.log('📐 Rectangle properties set:', {
+        selectable: rect.selectable,
+        evented: rect.evented,
+        width: rect.width,
+        height: rect.height,
+        left: rect.left,
+        top: rect.top
+      });
+
+      fabricCanvasRef.current.setActiveObject(rect);
+      fabricCanvasRef.current.renderAll();
+
+      console.log('✅ Rectangle ROI created and made active');
+      console.log('📊 Total objects on canvas:', fabricCanvasRef.current.getObjects().length);
+
+      // Dispatch custom event to notify ROIStatsPanel
+      window.dispatchEvent(new CustomEvent('roiAdded', {
+        detail: { roi: rect }
+      }));
+      console.log('📡 Dispatched roiAdded event');
+
+      // Reset refs
+      drawingRectRef.current = null;
+      rectStartPointRef.current = null;
+    }
+
+    // Reset pan start
+    panStartRef.current = null;
+  }, []); // حذف activeTool از dependency
 
   // Initialize Fabric.js canvas
   useEffect(() => {
@@ -214,6 +364,48 @@ const BaslerDisplay = () => {
       canvas.on('mouse:move', handleFabricMouseMove);
       canvas.on('mouse:up', handleFabricMouseUp);
 
+      // Constrain objects within canvas bounds (accounting for control handles)
+      canvas.on('object:moving', (e) => {
+        const obj = e.target;
+        const handlePadding = 5; // Half of cornerSize to keep handles inside
+
+        // Constrain horizontal position
+        if (obj.left < handlePadding) {
+          obj.left = handlePadding;
+        }
+        if (obj.left + obj.width * obj.scaleX > canvas.width - handlePadding) {
+          obj.left = canvas.width - obj.width * obj.scaleX - handlePadding;
+        }
+        // Constrain vertical position
+        if (obj.top < handlePadding) {
+          obj.top = handlePadding;
+        }
+        if (obj.top + obj.height * obj.scaleY > canvas.height - handlePadding) {
+          obj.top = canvas.height - obj.height * obj.scaleY - handlePadding;
+        }
+      });
+
+      // Constrain objects while scaling (accounting for control handles)
+      canvas.on('object:scaling', (e) => {
+        const obj = e.target;
+        const handlePadding = 5; // Half of cornerSize to keep handles inside
+        const width = obj.width * obj.scaleX;
+        const height = obj.height * obj.scaleY;
+
+        // Prevent scaling beyond canvas bounds
+        if (obj.left + width > canvas.width - handlePadding) {
+          obj.scaleX = (canvas.width - obj.left - handlePadding) / obj.width;
+        }
+        if (obj.top + height > canvas.height - handlePadding) {
+          obj.scaleY = (canvas.height - obj.top - handlePadding) / obj.height;
+        }
+        if (obj.left < handlePadding) {
+          obj.left = handlePadding;
+        }
+        if (obj.top < handlePadding) {
+          obj.top = handlePadding;
+        }
+      });
 
       // Prevent background image from being selected or moved
       canvas.on('object:added', (e) => {
@@ -375,14 +567,17 @@ const BaslerDisplay = () => {
   const setupFabricTools = useCallback((canvas) => {
     if (!canvas) return;
 
+    console.log('🔧 setupFabricTools - Active Tool:', activeTool);
+
     // Reset canvas settings
     canvas.isDrawingMode = false;
     canvas.selection = true;
     canvas.defaultCursor = 'default';
     canvas.hoverCursor = 'move';
 
-    // Make all objects selectable and movable when in move mode
-    if (activeTool === 'move') {
+    // Make all objects selectable and movable when in move mode OR rectangle mode
+    if (activeTool === 'move' || activeTool === 'rectangle') {
+      console.log('✅ Making objects selectable for tool:', activeTool);
       canvas.getObjects().forEach(obj => {
         if (obj !== canvas.backgroundImage) {
           obj.set({
@@ -398,6 +593,7 @@ const BaslerDisplay = () => {
       });
     } else {
       // Make objects non-selectable when using other tools
+      console.log('❌ Making objects non-selectable for tool:', activeTool);
       canvas.getObjects().forEach(obj => {
         if (obj !== canvas.backgroundImage) {
           obj.set({
@@ -421,6 +617,11 @@ const BaslerDisplay = () => {
       canvas.selection = true;
       canvas.defaultCursor = 'default';
       canvas.hoverCursor = 'move';
+    } else if (activeTool === 'rectangle') {
+      canvas.selection = true;
+      canvas.defaultCursor = 'crosshair';
+      canvas.hoverCursor = 'crosshair';
+      console.log('📐 Rectangle tool configured');
     } else if (activeTool === 'brush' || activeTool === 'line') {
       canvas.isDrawingMode = true;
       canvas.selection = false;
@@ -429,10 +630,12 @@ const BaslerDisplay = () => {
     }
 
     canvas.renderAll();
+    console.log('🔧 setupFabricTools complete - Objects count:', canvas.getObjects().length);
   }, [activeTool]);
 
   // همگام‌سازی ابزار فعال با Fabric.js
   useEffect(() => {
+    console.log('🔄 activeTool changed to:', activeTool);
     if (fabricCanvasRef.current && activeTool) {
       setupFabricTools(fabricCanvasRef.current);
     }

@@ -30,6 +30,8 @@ import {
   Activity,
   Crosshair,
   MapPin,
+  Grid3x3,
+  BarChart2,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ToolManager } from "./Tools";
@@ -40,6 +42,8 @@ import HistogramTool from "./Tools/HistogramTool.jsx";
 import IntensityProfileTool from "./Tools/IntensityProfileTool.jsx";
 import CrosshairToolPanel from "./Tools/CrosshairToolPanel.jsx";
 import PixelCoordinatePanel from "./Tools/PixelCoordinatePanel.jsx";
+import GridPanel from "./Tools/GridPanel.jsx";
+import ROIStatsPanel from "./Tools/ROIStatsPanel.jsx";
 
 // CSS for hiding scrollbar
 const scrollbarHideStyle = `
@@ -82,6 +86,8 @@ const tools = [
   { Icon: Activity, name: "intensity", hotkey: "i", category: "analyze" },
   { Icon: Crosshair, name: "crosshair", hotkey: "x", category: "analyze" },
   { Icon: MapPin, name: "pixelCoordinate", hotkey: "p", category: "analyze" },
+  { Icon: BarChart2, name: "roiStats", hotkey: "s", category: "analyze" },
+  { Icon: Grid3x3, name: "grid", hotkey: "shift+g", category: "view" },
   { Icon: Palette, name: "grayscale", hotkey: "g", category: "filter" },
   { Icon: Hand, name: "pan", hotkey: "space", category: "nav" },
   { Icon: RotateCcw, name: "undo", hotkey: "ctrl+z", category: "edit" },
@@ -206,6 +212,8 @@ const Toolbar = ({ className = "" }) => {
   useHotkeys("i", () => handleToolClick("intensity"), { preventDefault: true });
   useHotkeys("x", () => handleToolClick("crosshair"), { preventDefault: true });
   useHotkeys("p", () => handleToolClick("pixelCoordinate"), { preventDefault: true });
+  useHotkeys("s", () => handleToolClick("roiStats"), { preventDefault: true });
+  useHotkeys("shift+g", () => handleToolClick("grid"), { preventDefault: true });
   useHotkeys("g", () => handleToolClick("grayscale"), { preventDefault: true });
   useHotkeys("space", () => handleToolClick("pan"), { preventDefault: true });
   useHotkeys("ctrl+z", () => handleToolClick("undo"), { preventDefault: true });
@@ -671,6 +679,20 @@ const Toolbar = ({ className = "" }) => {
       {canvas && (
         <div className={`absolute left-full top-0 ml-2 z-50 ${activeTool === "pixelCoordinate" ? "" : "hidden"}`}>
           <PixelCoordinatePanel canvas={canvas} isActive={activeTool === "pixelCoordinate"} onClose={() => applyTool(null)} />
+        </div>
+      )}
+
+      {/* Grid Tool - Requirement #25 */}
+      {canvas && (
+        <div className={`absolute left-full top-0 ml-2 z-50 ${activeTool === "grid" ? "" : "hidden"}`}>
+          <GridPanel canvas={canvas} isActive={activeTool === "grid"} onClose={() => applyTool(null)} />
+        </div>
+      )}
+
+      {/* ROI Statistics Panel - Requirements #28-31 */}
+      {canvas && (
+        <div className={`absolute left-full top-0 ml-2 z-50 ${activeTool === "roiStats" ? "" : "hidden"}`}>
+          <ROIStatsPanel canvas={canvas} isActive={activeTool === "roiStats"} onClose={() => applyTool(null)} />
         </div>
       )}
     </motion.div>

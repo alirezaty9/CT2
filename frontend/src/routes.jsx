@@ -21,7 +21,6 @@ const routes = [
       { path: "projection", element: <ProjectionAcquisition /> },
       { path: "post-processing", element: <PostProcessing /> },
       { path: "reconstruction", element: <Reconstruction /> },
-
       { path: "settings", element: <SettingsPage /> }, // مسیر جدید
       { path: "canvas-test", element: <CanvasTest /> }, // تست Canvas پیشرفته
 
